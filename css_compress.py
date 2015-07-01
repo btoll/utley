@@ -134,20 +134,7 @@ def compress(src, output='min.css', dest='.', version='', dependencies=[], exclu
             buff.append(file_contents)
             print('Minified ' + script)
 
-        if '/' in output:
-            dest, output = os.path.split(output)
-
-        # This will overwrite pre-existing.
-        if dest != '.':
-            os.makedirs(dest, exist_ok=True)
-
-        with open(dest + '/' + output, mode='w', encoding='utf-8') as fp:
-            # Flush the buffer (only perform I/O once).
-            fp.write(''.join(buff))
-
-        #if server.prepare(output):
-        print('\nCreated minified script ' + output + ' in ' + dest + '/')
-        print('*****************************')
+        base_compress.write_buffer(buff, output)
 
     except (KeyboardInterrupt, EOFError):
         # Control-C or Control-D sent a SIGINT to the process, handle it.

@@ -99,20 +99,7 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
             buff.append(subprocess.getoutput('java -jar ' + jar + ' ' + script))
             print('Minified ' + script)
 
-        if '/' in output:
-            dest, output = os.path.split(output)
-
-        # This will overwrite pre-existing.
-        if dest != '.':
-            os.makedirs(dest, exist_ok=True)
-
-        # Let's append in case a build prepending copyright information (or anything, really) before calling here.
-        with open(dest + '/' + output, mode='a', encoding='utf-8') as fp:
-            # Flush the buffer (only perform I/O once).
-            fp.write(''.join(buff))
-
-        #if server.prepare(output):
-        print('\nCreated minified script ' + output + ' in ' + dest + '/')
+        base_compress.write_buffer(buff, output)
 
     except (KeyboardInterrupt, EOFError):
         # Control-C or Control-D sent a SIGINT to the process, handle it.

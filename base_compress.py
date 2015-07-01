@@ -56,3 +56,20 @@ def sift_list(root, suffix, exclude=[], dependencies=[]):
 
     return target
 
+def write_buffer(buff, output):
+    if '/' in output:
+        dest, output = os.path.split(output)
+
+    # This will overwrite pre-existing.
+    if dest != '.':
+        os.makedirs(dest, exist_ok=True)
+
+    # Let's append in case a build prepending copyright information (or anything, really) before calling here.
+    with open(dest + '/' + output, mode='w', encoding='utf-8') as fp:
+        # Flush the buffer (only perform I/O once).
+        fp.write(''.join(buff))
+
+    #if server.prepare(output):
+    print('\nCreated minified script ' + output + ' in ' + dest + '/')
+    print('*****************************')
+
