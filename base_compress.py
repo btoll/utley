@@ -42,13 +42,16 @@ def sift_list(root, suffix, exclude=[], dependencies=[]):
 
     # `root` should always be a list.
     for src in root:
-        # Let's only operate on filenames with absolute paths.
-        dependencies = process_files(src, original)
-        matches = filter_exclusions(src, exclude, suffix)
+        if os.path.isfile(src):
+            target += [src]
+        else:
+            # Let's only operate on filenames with absolute paths.
+            dependencies = process_files(src, original)
+            matches = filter_exclusions(src, exclude, suffix)
 
-        # Make sure our dependencies are at the front of the stack and not duped. The
-        # new list will be the target list of files to be processed by the minifier.
-        target += (dependencies + [f for f in matches if f not in dependencies])
+            # Make sure our dependencies are at the front of the stack and not duped. The
+            # new list will be the target list of files to be processed by the minifier.
+            target += (dependencies + [f for f in matches if f not in dependencies])
 
         if (len(target) <= 0):
             print('OPERATION ABORTED: Either no ' + suffix.upper() + ' source files were found in the specified source directory or there were more exclusions than source files.')
