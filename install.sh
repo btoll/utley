@@ -2,10 +2,10 @@
 
 echo "$(tput setaf 2)[INFO]$(tput sgr0) Installing Python build tools..."
 
-ln -s "$PWD"/python3/build/base_compress.py /usr/local/bin/base_compress.py
-ln -s "$PWD"/python3/build/css_compress.py /usr/local/bin/css_compress.py
-ln -s "$PWD"/python3/build/js_compress.py /usr/local/bin/js_compress.py
-ln -s "$PWD"/python3/build/utley.py /usr/local/bin/utley.py
+ln -s "$PWD"/base_compress.py /usr/local/bin/base_compress.py
+ln -s "$PWD"/compressors/css.py /usr/local/bin/css_compress.py
+ln -s "$PWD"/compressors/js.py /usr/local/bin/js_compress.py
+ln -s "$PWD"/utley.py /usr/local/bin/utley.py
 
 if [ -f ~/.bashrc ]; then
     echo "export PYTHONPATH=\$PYTHONPATH:/usr/local/bin/" >> ~/.bashrc
