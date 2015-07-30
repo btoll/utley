@@ -95,7 +95,7 @@ def build(json={}, targets=None):
             buildTarget(target, json, defaults)
 
 def buildTarget(target, json, defaults):
-    print(bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making ' + target +  ' target...')
+    print(bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making ' + bcolors.OKBLUE + target + bcolors.ENDC + ' target...')
 
     if target in defaults:
         compress(json.get(target), defaults[target])
@@ -104,7 +104,7 @@ def buildTarget(target, json, defaults):
         target = json.get(target)
 
         for targ in target:
-            print('-----> ' + bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making ' + targ +  ' subtarget:')
+            print('-----> ' + bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Has subtarget -> ' + bcolors.OKBLUE + targ + bcolors.ENDC)
             ls = target.get(targ)
 
             for d in ls:
@@ -116,8 +116,7 @@ def clean(target):
         print(bcolors.FAIL + '[ERROR]:' + bcolors.ENDC + ' Build target does not exist.')
         sys.exit(2)
     else:
-        print('\n**********************************')
-        print(bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making clean target...')
+        print(bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making ' + bcolors.OKBLUE + 'clean' + bcolors.ENDC + ' target...')
 
         for t in target:
             run = t.get('run')
@@ -131,7 +130,7 @@ def clean(target):
     print('-----------> ' + bcolors.OKGREEN + 'Done' + bcolors.ENDC + '\n')
 
 def compress(target, compressor):
-    print('-----------> Using compressor: ' + compressor)
+    print('-----------> Using compressor: ' + bcolors.UNDERLINE + compressor + bcolors.ENDC)
 
     for t in target:
         src = t.get('src')
