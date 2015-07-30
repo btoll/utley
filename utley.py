@@ -1,3 +1,4 @@
+# TODO: Allow specifying clean target in a --target chain, i.e., `utley --target=clean,js,css
 import base_compress
 from bcolors import bcolors
 import compressors.css
@@ -70,18 +71,11 @@ def main(argv):
         clean(json.get('clean'))
 
 def build(json={}, targets=None):
-    # If compressing any of the following source files, it's not necessary to
-    # explcitly define the compressor in the build file.
-    defaults = {
-        'css': 'css',
-        'js': 'js',
-        'json': 'css'
-    }
-
     if targets:
         for target in targets:
-            buildTarget(target, json, defaults)
+            buildTarget(target, json)
     else:
+        # We're building all targets.
         cleanTarget = json.get('clean')
 
         if cleanTarget:
@@ -92,24 +86,46 @@ def build(json={}, targets=None):
             if target == 'clean':
                 continue
 
-            buildTarget(target, json, defaults)
+            buildTarget(target, json)
 
-def buildTarget(target, json, defaults):
-    print(bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making ' + bcolors.OKBLUE + target + bcolors.ENDC + ' target...')
+def buildTarget(target, json, isSubTarget=False):
+    ls = []
+    indent = ''
 
-    if target in defaults:
-        compress(json.get(target), defaults[target])
+    if not isinstance(target, dict):
+        makeString = bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making ' + bcolors.OKBLUE + target + bcolors.ENDC + ' target...'
+
+        # Check to see if target is a subtarget (i.e., 'quizzes.chord_buider'). It will only be dot-separated
+        # if explicitly passed as a build target.
+        if '.' in target:
+            print(makeString)
+            keys = target.split('.')
+            ls = json[keys[0]][keys[1]]
+
+        else:
+            if isSubTarget:
+                indent = '-----> '
+
+            print(indent + makeString)
+            ls = json.get(target)
+
+        # If compressing any of the following targets then send it directly to its same-named compressor.
+        if target in ['css', 'js', 'json']:
+            compress(ls, target)
+        else:
+            for subtarget in ls:
+                buildTarget(subtarget, ls, True)
+
+    # If a dict then we can't recurse any further, compress the targets and we're done (should only be css
+    # and/or js at this point).
     else:
-        # Redefine target to be the list target.
-        target = json.get(target)
+        css = target.get('css')
+        if css:
+            compress(target.get('css'), 'css')
 
-        for targ in target:
-            print('-----> ' + bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Has subtarget -> ' + bcolors.OKBLUE + targ + bcolors.ENDC)
-            ls = target.get(targ)
-
-            for d in ls:
-                compress(d.get('css'), 'css')
-                compress(d.get('js'), 'js')
+        js = target.get('js')
+        if js:
+            compress(target.get('js'), 'js')
 
 def clean(target):
     if not target:
