@@ -11,10 +11,10 @@ def usage():
     str = '''
         USAGE:
 
-        # Build all targets (assumes an utley.json build file).
+        # Build all targets (assumes an `utley.json` build file).
         utley
 
-        # Specify a different build file.
+        # Specify a different build file than the default `utley.json`.
         utley --config=foo.json
 
         # Build only the CSS target.
@@ -23,16 +23,15 @@ def usage():
         # Build only the JavaScript target.
         utley --target=js
 
-        # Build only multiple target.
+        # Specify multiple targets.
         utley --target=js,css,quizzes
 
         # Clean.
         utley --clean
 
-        --clean       Run the clean build target.
+        --clean       Run the `clean` build target.
         --config, -c  The location of the build file. Defaults to 'utley.json'.
-        --css         Build the CSS only.
-        --js          Build the JavaScript only.
+        --target, -t  Specify build targets (comma-separated)
     '''
     print(textwrap.dedent(str))
 
