@@ -12,19 +12,22 @@ def usage():
         USAGE:
 
         # Build all targets (assumes an utley.json build file).
-        python3 utley.py
+        utley
 
         # Specify a different build file.
-        python3 utley.py --config=foo.json
+        utley --config=foo.json
 
-        # Build only the CSS.
-        python3 utley.py --css
+        # Build only the CSS target.
+        utley --target=css
 
-        # Build only the JavaScript.
-        python3 utley.py --js
+        # Build only the JavaScript target.
+        utley --target=js
+
+        # Build only multiple target.
+        utley --target=js,css,quizzes
 
         # Clean.
-        python3 utley.py --clean
+        utley --clean
 
         --clean       Run the clean build target.
         --config, -c  The location of the build file. Defaults to 'utley.json'.
@@ -34,20 +37,18 @@ def usage():
     print(textwrap.dedent(str))
 
 def main(argv):
-    buildCss = False
-    buildJs = False
     doClean = False
     configFile = 'utley.json'
     css = []
     js = []
-    target = None
+    targets = None
 
     # If there are no given arguments, assume an utley.json file and both build targets.
     if len(argv) == 0:
         json = base_compress.getJson()
     else:
         try:
-            opts, args = getopt.getopt(argv, 'hc:t:', ['help', 'config=', 'clean', 'css', 'js', 'target='])
+            opts, args = getopt.getopt(argv, 'hc:t:', ['help', 'config=', 'clean', 'target='])
         except getopt.GetoptError:
             print('Error: Unrecognized flag.')
             usage()
@@ -61,22 +62,17 @@ def main(argv):
                 configFile = arg
             elif opt == '--clean':
                 doClean = True
-            elif opt == '--css':
-                buildCss = True
-            elif opt == '--js':
-                buildJs = True
             elif opt in ('-t', '--target'):
-                target = base_compress.make_list(arg)
+                targets = base_compress.make_list(arg)
 
-        #css, js = base_compress.getJson(configFile, buildCss, buildJs)
         json = base_compress.getJson(configFile)
 
     if not doClean:
-        build(json)
+        build(json, targets)
     else:
         clean(json.get('clean'))
 
-def build(json={}):
+def build(json={}, targets=None):
     # If compressing any of the following source files, it's not necessary to
     # explcitly define the compressor in the build file.
     defaults = {
@@ -85,30 +81,37 @@ def build(json={}):
         'json': 'css'
     }
 
-    cleanTarget = json.get('clean')
-    if cleanTarget:
-        clean(cleanTarget)
+    if targets:
+        for target in targets:
+            buildTarget(target, json, defaults)
+    else:
+        cleanTarget = json.get('clean')
+        if cleanTarget:
+            clean(cleanTarget)
 
-    for target in json:
-        # Skip the clean target!
-        if target == 'clean':
-            continue
+        for target in json:
+            # Skip the clean target!
+            if target == 'clean':
+                continue
 
-        print(bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making ' + target +  ' target...')
+            buildTarget(target, json, defaults)
 
-        if target in defaults:
-            compress(json.get(target), defaults[target])
-        else:
-            # Redefine target to be the list target.
-            target = json.get(target)
+def buildTarget(target, json, defaults):
+    print(bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making ' + target +  ' target...')
 
-            for targ in target:
-                print('-----> ' + bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making ' + targ +  ' subtarget:')
-                ls = target.get(targ)
+    if target in defaults:
+        compress(json.get(target), defaults[target])
+    else:
+        # Redefine target to be the list target.
+        target = json.get(target)
 
-                for d in ls:
-                    compress(d.get('css'), 'css')
-                    compress(d.get('js'), 'js')
+        for targ in target:
+            print('-----> ' + bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making ' + targ +  ' subtarget:')
+            ls = target.get(targ)
+
+            for d in ls:
+                compress(d.get('css'), 'css')
+                compress(d.get('js'), 'js')
 
 def clean(target):
     if not target:
@@ -116,7 +119,7 @@ def clean(target):
         sys.exit(2)
     else:
         print('\n**********************************')
-        print(bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making clean target.')
+        print(bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making clean target...')
         for t in target:
             run = t.get('run')
 
@@ -126,10 +129,10 @@ def clean(target):
             else:
                 os.system(run)
 
-    print('----------> ' + bcolors.OKGREEN + 'Done' + bcolors.ENDC + '.\n')
+    print('-----------> ' + bcolors.OKGREEN + 'Done' + bcolors.ENDC + '\n')
 
 def compress(target, compressor):
-    print('----------> Using compressor: ' + compressor + '.')
+    print('-----------> Using compressor: ' + compressor)
     for t in target:
         src = t.get('src')
         output = t.get('output')
@@ -144,7 +147,7 @@ def compress(target, compressor):
             compressors.js.compress(src, output, dest, version, dependencies, exclude)
 
 
-    print('----------> '+ bcolors.OKGREEN + 'Done' + bcolors.ENDC + '.\n')
+    print('-----------> '+ bcolors.OKGREEN + 'Done' + bcolors.ENDC + '\n')
 
 if __name__ == '__main__':
 #    if len(sys.argv) == 1:
