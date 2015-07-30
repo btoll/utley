@@ -36,10 +36,8 @@ def usage():
     print(textwrap.dedent(str))
 
 def main(argv):
-    doClean = False
     configFile = 'utley.json'
-    css = []
-    js = []
+    doClean = False
     targets = None
 
     # If there are no given arguments, assume an utley.json file and both build targets.
@@ -85,6 +83,7 @@ def build(json={}, targets=None):
             buildTarget(target, json, defaults)
     else:
         cleanTarget = json.get('clean')
+
         if cleanTarget:
             clean(cleanTarget)
 
@@ -119,6 +118,7 @@ def clean(target):
     else:
         print('\n**********************************')
         print(bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making clean target...')
+
         for t in target:
             run = t.get('run')
 
@@ -132,6 +132,7 @@ def clean(target):
 
 def compress(target, compressor):
     print('-----------> Using compressor: ' + compressor)
+
     for t in target:
         src = t.get('src')
         output = t.get('output')
@@ -144,7 +145,6 @@ def compress(target, compressor):
             compressors.css.compress(src, output, dest, version, dependencies, exclude)
         elif compressor == 'js':
             compressors.js.compress(src, output, dest, version, dependencies, exclude)
-
 
     print('-----------> '+ bcolors.OKGREEN + 'Done' + bcolors.ENDC + '\n')
 

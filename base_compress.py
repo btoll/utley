@@ -32,12 +32,6 @@ def getJson(resource='utley.json'):
             jsonData = json.loads(f.read())
 
         return jsonData
-#        if css and js:
-#            return (jsonData.get('css'), jsonData.get('js'))
-#        elif css and not js:
-#            return (jsonData.get('css'), [])
-#        elif not css and js:
-#            return ([], jsonData.get('js'))
 
     # Exceptions could be bad Json or file not found.
     except (ValueError, FileNotFoundError) as e:
