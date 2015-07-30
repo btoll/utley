@@ -1,6 +1,5 @@
 import base_compress
 import getopt
-import getpass
 import json
 import os
 import re
@@ -8,7 +7,6 @@ import server
 import subprocess
 import sys
 import textwrap
-import time
 
 def usage():
     str = '''
@@ -91,9 +89,6 @@ def compress(src, output='min.css', dest='.', version='', dependencies=[], exclu
         sys.exit(2)
 
     try:
-        print('*****************************')
-        print('Creating minified script...\n')
-
         buff = []
         ls = base_compress.sift_list(
             base_compress.make_list(src),
@@ -132,7 +127,6 @@ def compress(src, output='min.css', dest='.', version='', dependencies=[], exclu
             file_contents = reReplaceDoubleSpaces.sub(' ', file_contents)
 
             buff.append(file_contents)
-            print('Minified ' + script)
 
         base_compress.write_buffer(buff, output)
 

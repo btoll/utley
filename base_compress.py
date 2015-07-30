@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import sys
@@ -23,6 +24,25 @@ def filter_exclusions(root, exclude=[], suffix='js'):
         [dirnames.remove(d) for d in dirnames if os.path.join(root, d) in exclude]
 
     return matches
+
+def getJson(resource='utley.json'):
+    try:
+        # TODO: Is there a better way to get the values from the Json?
+        with open(resource, mode='r', encoding='utf-8') as f:
+            jsonData = json.loads(f.read())
+
+        return jsonData
+#        if css and js:
+#            return (jsonData.get('css'), jsonData.get('js'))
+#        elif css and not js:
+#            return (jsonData.get('css'), [])
+#        elif not css and js:
+#            return ([], jsonData.get('js'))
+
+    # Exceptions could be bad Json or file not found.
+    except (ValueError, FileNotFoundError) as e:
+        print(e)
+        sys.exit(1)
 
 def make_abspath(root, ls):
     return [os.path.join(root, f) for f in ls]
@@ -71,8 +91,4 @@ def write_buffer(buff, output):
     with open(dest + '/' + output, mode='w', encoding='utf-8') as fp:
         # Flush the buffer (only perform I/O once).
         fp.write(''.join(buff))
-
-    #if server.prepare(output):
-    print('\nCreated minified script ' + output + ' in ' + dest + '/')
-    print('*****************************')
 

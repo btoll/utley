@@ -1,7 +1,9 @@
-import css_compress
+import base_compress
+from bcolors import bcolors
+import compressors.css
+import compressors.js
 import getopt
-import js_compress
-import json
+import os
 import sys
 import textwrap
 
@@ -21,6 +23,10 @@ def usage():
         # Build only the JavaScript.
         python3 utley.py --js
 
+        # Clean.
+        python3 utley.py --clean
+
+        --clean       Run the clean build target.
         --config, -c  The location of the build file. Defaults to 'utley.json'.
         --css         Build the CSS only.
         --js          Build the JavaScript only.
@@ -30,16 +36,18 @@ def usage():
 def main(argv):
     buildCss = False
     buildJs = False
+    doClean = False
     configFile = 'utley.json'
     css = []
     js = []
+    target = None
 
     # If there are no given arguments, assume an utley.json file and both build targets.
     if len(argv) == 0:
-        css, js = getJson()
+        json = base_compress.getJson()
     else:
         try:
-            opts, args = getopt.getopt(argv, 'hc:', ['help', 'config=', 'css', 'js'])
+            opts, args = getopt.getopt(argv, 'hc:t:', ['help', 'config=', 'clean', 'css', 'js', 'target='])
         except getopt.GetoptError:
             print('Error: Unrecognized flag.')
             usage()
@@ -51,53 +59,92 @@ def main(argv):
                 sys.exit(0)
             elif opt in ('-c', '--config'):
                 configFile = arg
+            elif opt == '--clean':
+                doClean = True
             elif opt == '--css':
                 buildCss = True
             elif opt == '--js':
                 buildJs = True
+            elif opt in ('-t', '--target'):
+                target = base_compress.make_list(arg)
 
-        css, js = getJson(configFile, buildCss, buildJs)
+        #css, js = base_compress.getJson(configFile, buildCss, buildJs)
+        json = base_compress.getJson(configFile)
 
-    build(js, css)
+    if not doClean:
+        build(json)
+    else:
+        clean(json.get('clean'))
 
-def build(js=[], css=[]):
-    for c in css:
-        src = c.get('src')
-        output = c.get('output')
-        dest = c.get('dest', '.')
-        version = c.get('version', '')
-        dependencies = c.get('dependencies', [])
-        exclude = c.get('exclude', [])
+def build(json={}):
+    # If compressing any of the following source files, it's not necessary to
+    # explcitly define the compressor in the build file.
+    defaults = {
+        'css': 'css',
+        'js': 'js',
+        'json': 'css'
+    }
 
-        css_compress.compress(src, output, dest, version, dependencies, exclude)
+    cleanTarget = json.get('clean')
+    if cleanTarget:
+        clean(cleanTarget)
 
-    for c in js:
-        src = c.get('src')
-        output = c.get('output')
-        dest = c.get('dest', '.')
-        version = c.get('version', '')
-        dependencies = c.get('dependencies', [])
-        exclude = c.get('exclude', [])
+    for target in json:
+        # Skip the clean target!
+        if target == 'clean':
+            continue
 
-        js_compress.compress(src, output, dest, version, dependencies, exclude)
+        print(bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making ' + target +  ' target...')
 
-def getJson(resource='utley.json', css=True, js=True):
-    try:
-        # TODO: Is there a better way to get the values from the Json?
-        with open(resource, mode='r', encoding='utf-8') as f:
-            jsonData = json.loads(f.read())
+        if target in defaults:
+            compress(json.get(target), defaults[target])
+        else:
+            # Redefine target to be the list target.
+            target = json.get(target)
 
-        if css and js:
-            return (jsonData.get('css'), jsonData.get('js'))
-        elif css and not js:
-            return (jsonData.get('css'), [])
-        elif not css and js:
-            return ([], jsonData.get('js'))
+            for targ in target:
+                print('-----> ' + bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making ' + targ +  ' subtarget:')
+                ls = target.get(targ)
 
-    # Exceptions could be bad Json or file not found.
-    except (ValueError, FileNotFoundError) as e:
-        print(e)
-        sys.exit(1)
+                for d in ls:
+                    compress(d.get('css'), 'css')
+                    compress(d.get('js'), 'js')
+
+def clean(target):
+    if not target:
+        print(bcolors.FAIL + '[ERROR]:' + bcolors.ENDC + ' Build target does not exist.')
+        sys.exit(2)
+    else:
+        print('\n**********************************')
+        print(bcolors.BOLD + '[INF]' + bcolors.ENDC + ' Making clean target.')
+        for t in target:
+            run = t.get('run')
+
+            if not run:
+                print('Error: No "run" command, aborting...')
+                sys.exit(2)
+            else:
+                os.system(run)
+
+    print('----------> ' + bcolors.OKGREEN + 'Done' + bcolors.ENDC + '.\n')
+
+def compress(target, compressor):
+    print('----------> Using compressor: ' + compressor + '.')
+    for t in target:
+        src = t.get('src')
+        output = t.get('output')
+        dest = t.get('dest', '.')
+        version = t.get('version', '')
+        dependencies = t.get('dependencies', [])
+        exclude = t.get('exclude', [])
+
+        if compressor == 'css' or compressor == 'json':
+            compressors.css.compress(src, output, dest, version, dependencies, exclude)
+        elif compressor == 'js':
+            compressors.js.compress(src, output, dest, version, dependencies, exclude)
+
+
+    print('----------> '+ bcolors.OKGREEN + 'Done' + bcolors.ENDC + '.\n')
 
 if __name__ == '__main__':
 #    if len(sys.argv) == 1:

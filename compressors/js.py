@@ -2,7 +2,6 @@
 
 import base_compress
 import getopt
-import getpass
 import os
 import server
 import subprocess
@@ -85,8 +84,6 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
                 sys.exit(2)
 
     try:
-        print('Creating minified script...\n')
-
         buff = []
         ls = base_compress.sift_list(
             base_compress.make_list(src),
@@ -97,7 +94,6 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
 
         for script in ls:
             buff.append(subprocess.getoutput('java -jar ' + jar + ' ' + script))
-            print('Minified ' + script)
 
         base_compress.write_buffer(buff, output)
 
