@@ -14,17 +14,17 @@ Build only the JavaScript target.
 
     utley --target=js
 
-Specify multiple targets.
+Build multiple targets.
 
     utley --target=js,css,quizzes
 
 Build a nested subtarget.
 
-    utley --target=quizzes.chord_builder
+    utley --target=foo.bar.quux
 
 Build whatever you want.
 
-    utley --target=js,css,quizzes.chord_builder,json
+    utley --target=js,css,quizzes.chord_builder,my_custom_target
 
 Clean.
 

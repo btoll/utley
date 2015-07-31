@@ -1,0 +1,95 @@
+{
+    "clean": [{
+        "run": "rm -rf build"
+    }],
+
+    // The `css` target will produce multiple build artifacts.
+    "css": [{
+        "src": [
+            "../PeteJS/resources/css/",
+            "resources/css/"
+        ],
+        "output": "build/music_theory.css"
+    }, {
+        "src": "app/quizzes/chord_builder/",
+        "output": "build/quizzes/chord_builder/quiz.css"
+    }, {
+        "src": "app/quizzes/key_signature/",
+        "output": "build/quizzes/key_signature/quiz.css"
+    }],
+
+    // The `js` target will produce multiple build artifacts.
+    "js": [{
+        "src": [
+            "../PeteJS/src/",
+            "app/app.js"
+        ],
+        "output": "build/music_theory.js",
+        "dependencies": [
+            "Pete.prototype.js",
+            "Pete.js",
+            "Pete.Observer.js",
+            "Pete.Element.js",
+            "Pete.Composite.js"
+        ]
+    }, {
+        "src": "app/quizzes/chord_builder/",
+        "output": "build/quizzes/chord_builder/quiz.js"
+    }, {
+        "src": "app/quizzes/key_signature/",
+        "output": "build/quizzes/key_signature/quiz.js"
+    }],
+
+    // The `json` target will produce multiple build artifacts.
+    "json": [{
+        "src": "app.json",
+        "output": "build/app.json"
+    }, {
+        "src": "app/chords/sevenths/basic.json",
+        "output": "build/chords/sevenths/basic.json"
+    }, {
+        "src": "app/chords/sevenths/advanced.json",
+        "output": "build/chords/sevenths/advanced.json"
+    }],
+
+    // It's possible to nest subtargets and call them explicitly using object dot notation.
+    // Note that each quiz contains its own `css` and `js` build assets.
+    "quizzes": {
+        "chord_puzzle": [{
+            "css": [{
+                "src": "app/quizzes/chord_puzzle/",
+                "output": "build/quizzes/chord_puzzle/quiz.css"
+            }],
+
+            "js": [{
+                "src": "app/quizzes/chord_puzzle/",
+                "output": "build/quizzes/chord_puzzle/quiz.js"
+            }]
+        }],
+
+        "chord_builder": [{
+            "css": [{
+                "src": "app/quizzes/chord_builder/",
+                "output": "build/quizzes/chord_builder/quiz.css"
+            }],
+
+            "js": [{
+                "src": "app/quizzes/chord_builder/",
+                "output": "build/quizzes/chord_builder/quiz.js"
+            }]
+        }],
+
+        "key_signature": [{
+            "css": [{
+                "src": "app/quizzes/key_signature/",
+                "output": "build/quizzes/key_signature/quiz.css"
+            }],
+
+            "js": [{
+                "src": "app/quizzes/key_signature/",
+                "output": "build/quizzes/key_signature/quiz.js"
+            }]
+        }]
+    }
+}
+

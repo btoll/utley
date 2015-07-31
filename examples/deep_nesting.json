@@ -1,0 +1,50 @@
+{
+    "clean": [{
+        "run": "rm -rf build"
+    }],
+
+    "json": [{
+        "src": "app.json",
+        "output": "build/app.json"
+    }, {
+        "src": "app/chords/sevenths/basic.json",
+        "output": "build/chords/sevenths/basic.json"
+    }, {
+        "src": "app/chords/sevenths/advanced.json",
+        "output": "build/chords/sevenths/advanced.json"
+    }],
+
+    // Reachable by specifying any object in the hierarchy using object dot notation.
+    "quizzes": {
+        "foo": {
+            "quux": {
+                "baz": {
+                    "bar": [{
+                        "css": [{
+                            "src": "app/quizzes/chord_puzzle/",
+                            "output": "build/quizzes/foo/quux/baz/bar/quiz.css"
+                        }],
+
+                        "js": [{
+                            "src": "app/quizzes/chord_puzzle/",
+                            "output": "build/quizzes/foo/quux/baz/bar/quiz.js"
+                        }]
+                    }]
+                }
+            }
+        },
+
+        "key_signature": [{
+            "css": [{
+                "src": "app/quizzes/key_signature/",
+                "output": "build/quizzes/key_signature/quiz.css"
+            }],
+
+            "js": [{
+                "src": "app/quizzes/key_signature/",
+                "output": "build/quizzes/key_signature/quiz.js"
+            }]
+        }]
+    }
+}
+
