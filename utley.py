@@ -1,4 +1,3 @@
-# TODO: Allow specifying clean target in a --target chain, i.e., `utley --target=clean,js,css
 # TODO: Add global var for visual spacing '******'
 import base_compress
 from bcolors import bcolors
@@ -32,7 +31,7 @@ def usage():
         utley --target=foo.bar.quux
 
         # Build whatever you want.
-        utley --target=js,css,quizzes.chord_builder,my_custom_target
+        utley --target=clean,css,quizzes.chord_builder,my_custom_target
 
         # Clean.
         utley --clean
@@ -75,6 +74,8 @@ def main(argv):
     if not doClean:
         build(json, targets)
     else:
+        print(bcolors.BOLD + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.OKBLUE + 'clean' + bcolors.ENDC + ' target...')
+
         clean(json.get('clean'))
 
 def build(json={}, targets=None):
@@ -86,6 +87,8 @@ def build(json={}, targets=None):
         cleanTarget = json.get('clean')
 
         if cleanTarget:
+            print(bcolors.BOLD + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.OKBLUE + 'clean' + bcolors.ENDC + ' target...')
+
             clean(cleanTarget)
 
         for target in json:
@@ -118,6 +121,8 @@ def buildTarget(target, json, indent=''):
         # If compressing any of the known extensions then send it directly to its same-named compressor.
         if target in compressors.keys():
             compress(ls, compressors[target], indent)
+        elif target == 'clean':
+            clean(json.get(target))
         else:
             for subtarget in ls:
                 # For nested targets we want to keep indenting.
@@ -139,8 +144,6 @@ def clean(target):
         print(bcolors.FAIL + '[ERROR]:' + bcolors.ENDC + ' Build target does not exist.')
         sys.exit(2)
     else:
-        print(bcolors.BOLD + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.OKBLUE + 'clean' + bcolors.ENDC + ' target...')
-
         for t in target:
             run = t.get('run')
 

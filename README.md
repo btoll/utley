@@ -35,7 +35,7 @@ Build a nested subtarget.
 
 Build whatever you want.
 
-    utley --target=js,css,quizzes.chord_builder,my_custom_target
+    utley --target=clean,css,quizzes.chord_builder,my_custom_target
 
 Clean.
 
