@@ -1,3 +1,14 @@
+Utley is all of the following things.
+
++ A dog (he's Top Dog, actually).
+
++ A Python build tool.
+
+What is the license?
++ Utley is [free][wtfpl].
+
+[wtfpl]: http://www.wtfpl.net/
+
 Build all targets (assumes an `utley.json` build file).
 
     utley
