@@ -128,8 +128,8 @@ def buildTarget(target, json, indent=''):
                 # For nested targets we want to keep indenting.
                 buildTarget(subtarget, ls, indent + '****** ')
 
-    # If a dict then we can't recurse any further, compress the targets and we're done (should only be css
-    # and/or js at this point).
+    # If a dict then we can't recurse any further, compress the targets and we're done (should only be css,
+    # js, or json at this point).
     else:
         css = target.get('css')
         if css:
@@ -138,6 +138,11 @@ def buildTarget(target, json, indent=''):
         js = target.get('js')
         if js:
             compress(target.get('js'), 'js', indent)
+
+        json = target.get('json')
+        if json:
+            # This isn't a bug, json uses the css compressor.
+            compress(target.get('json'), 'css', indent)
 
 def clean(target):
     if not target:
