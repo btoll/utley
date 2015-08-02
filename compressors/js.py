@@ -1,7 +1,7 @@
 # TODO: support compressors other than YUI Compressor?
-
 import base_compress
 import getopt
+import itertools
 import os
 import server
 import subprocess
@@ -92,8 +92,13 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
             base_compress.make_list(dependencies)
         )
 
+        spinner = itertools.cycle(['-', '\\', '|', '/'])
+
         for script in ls:
             buff.append(subprocess.getoutput('java -jar ' + jar + ' ' + script))
+            sys.stdout.write(next(spinner))
+            sys.stdout.flush()
+            sys.stdout.write('\b')
 
         base_compress.write_buffer(buff, output)
 
