@@ -168,11 +168,12 @@ def compress(target, compressor, indent=''):
         version = t.get('version', '')
         dependencies = t.get('dependencies', [])
         exclude = t.get('exclude', [])
+        name = t.get('name', '')
 
         if compressor == 'css' or compressor == 'json':
-            compressors.css.compress(src, output, dest, version, dependencies, exclude)
+            compressors.css.compress(src, output, dest, version, dependencies, exclude, name)
         elif compressor == 'js':
-            compressors.js.compress(src, output, dest, version, dependencies, exclude)
+            compressors.js.compress(src, output, dest, version, dependencies, exclude, name)
 
     print(indent + bcolors.OKGREEN + 'Done' + bcolors.ENDC + '\n')
 

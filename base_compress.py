@@ -56,6 +56,11 @@ def sift_list(root, suffix, exclude=[], dependencies=[]):
 
     # `root` should always be a list.
     for src in root:
+        # If the src is a name, i.e., it refers to a previous build target, just add it to the target list and continue.
+        if src[0] == '@':
+            target += [src]
+            continue
+
         if os.path.isfile(src):
             target += [src]
         else:

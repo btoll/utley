@@ -8,6 +8,8 @@ import subprocess
 import sys
 import textwrap
 
+builds = {}
+
 def usage():
     str = '''
         USAGE:
@@ -40,6 +42,8 @@ def main(argv):
     version = ''
     dependencies = []
     exclude = []
+    # Note this needs to be defined to support full build tool.
+    name = ''
 
     try:
         opts, args = getopt.getopt(argv, 'hs:o:d:v:j:', ['help', 'src=', 'output=', 'dest=', 'version=', 'dependencies=', 'exclude=', 'jar='])
@@ -67,9 +71,11 @@ def main(argv):
         elif opt in ('-j', '--jar'):
             jar = arg
 
-    compress(src, output, dest, version, dependencies, exclude, jar)
+    compress(src, output, dest, version, dependencies, exclude, name, jar)
 
-def compress(src, output='min.js', dest='.', version='', dependencies=[], exclude=[], jar=None):
+def compress(src, output='min.js', dest='.', version='', dependencies=[], exclude=[], name='', jar=None):
+    global builds
+
     if not src:
         print('Error: You must provide the location of the source files.')
         sys.exit(2)
@@ -95,10 +101,21 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
         spinner = itertools.cycle(['-', '\\', '|', '/'])
 
         for script in ls:
-            buff.append(subprocess.getoutput('java -jar ' + jar + ' ' + script))
-            sys.stdout.write(next(spinner))
-            sys.stdout.flush()
-            sys.stdout.write('\b')
+            # If script is a named target then retrieve it from the global `builds` dict.
+            # Note that it assumes the named target was already built!
+            if script[0] == '@':
+                buff.append(''.join(builds.get(script[1:])))
+            else:
+                sys.stdout.write(next(spinner))
+                sys.stdout.flush()
+                sys.stdout.write('\b')
+
+                buff.append(subprocess.getoutput('java -jar ' + jar + ' ' + script))
+
+        if name:
+            builds.update({
+                name: buff
+            })
 
         base_compress.write_buffer(buff, output)
 

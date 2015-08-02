@@ -20,6 +20,7 @@
 
     // The `js` target will produce multiple build artifacts.
     "js": [{
+        "name": "Pete",
         "src": [
             "../PeteJS/src/",
             "app/app.js"
@@ -33,11 +34,12 @@
             "Pete.Composite.js"
         ]
     }, {
-        "src": "app/quizzes/chord_builder/",
-        "output": "build/quizzes/chord_builder/quiz.js"
-    }, {
-        "src": "app/quizzes/key_signature/",
-        "output": "build/quizzes/key_signature/quiz.js"
+        // Note the reference to the "Pete" target, made available by the inclusion of the "name" property.
+        "src": [
+            "@Pete",
+            "app/app.js"
+        ],
+        "output": "build/music_theory.js"
     }],
 
     // The `json` target will produce multiple build artifacts.

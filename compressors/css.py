@@ -38,6 +38,8 @@ def main(argv):
     version = ''
     dependencies = []
     exclude = []
+    # Note this needs to be defined to support full build tool.
+    name = ''
 
     try:
         opts, args = getopt.getopt(argv, 'hs:o:d:v:c:', ['help', 'src=', 'output=', 'dest=', 'version=', 'dependencies=', 'exclude=', 'config'])
@@ -81,9 +83,9 @@ def main(argv):
                 print(e)
                 sys.exit(1)
 
-    compress(src, output, dest, version, dependencies, exclude)
+    compress(src, output, dest, version, dependencies, exclude, name)
 
-def compress(src, output='min.css', dest='.', version='', dependencies=[], exclude=[]):
+def compress(src, output='min.css', dest='.', version='', dependencies=[], exclude=[], name=''):
     if not src:
         print('Error: You must provide the location of the source files.')
         sys.exit(2)
