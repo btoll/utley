@@ -43,7 +43,8 @@ Clean.
 
 USAGE:
 
-    --clean       Run the `clean` build target.
-    --config, -c  The location of the build file. Defaults to 'utley.json'.
-    --target, -t  Specify build targets (comma-separated)
+    --clean        Run the `clean` build target.
+    --config, -c   The location of the build file. Defaults to 'utley.json'.
+    --target, -t   Specify build targets (comma-separated)
+    --verbose, -v  Print build information.
 

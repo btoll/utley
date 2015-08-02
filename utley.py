@@ -36,9 +36,10 @@ def usage():
         # Clean.
         utley --clean
 
-        --clean       Run the `clean` build target.
-        --config, -c  The location of the build file. Defaults to 'utley.json'.
-        --target, -t  Specify build targets (comma-separated)
+        --clean        Run the `clean` build target.
+        --config, -c   The location of the build file. Defaults to 'utley.json'.
+        --target, -t   Specify build targets (comma-separated).
+        --verbose, -v  Print build information.
     '''
     print(textwrap.dedent(str))
 
@@ -46,13 +47,14 @@ def main(argv):
     configFile = 'utley.json'
     doClean = False
     targets = None
+    verbose = False
 
     # If there are no given arguments, assume an utley.json file and both build targets.
     if len(argv) == 0:
         json = base_compress.getJson()
     else:
         try:
-            opts, args = getopt.getopt(argv, 'hc:t:', ['help', 'config=', 'clean', 'target='])
+            opts, args = getopt.getopt(argv, 'hc:t:v', ['help', 'config=', 'clean', 'target=', 'verbose'])
         except getopt.GetoptError:
             print('Error: Unrecognized flag.')
             usage()
@@ -68,20 +70,22 @@ def main(argv):
                 doClean = True
             elif opt in ('-t', '--target'):
                 targets = base_compress.make_list(arg)
+            elif opt in ('-v', '--verbose'):
+                verbose = True
 
         json = base_compress.getJson(configFile)
 
     if not doClean:
-        build(json, targets)
+        build(json, targets, verbose)
     else:
         print(bcolors.BOLD + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.OKBLUE + 'clean' + bcolors.ENDC + ' target...')
 
         clean(json.get('clean'))
 
-def build(json={}, targets=None):
+def build(json={}, targets=None, verbose=False):
     if targets:
         for target in targets:
-            buildTarget(target, json)
+            buildTarget(target, json, verbose)
     else:
         # We're building all targets.
         cleanTarget = json.get('clean')
@@ -96,9 +100,9 @@ def build(json={}, targets=None):
             if target == 'clean':
                 continue
 
-            buildTarget(target, json)
+            buildTarget(target, json, verbose)
 
-def buildTarget(target, json, indent=''):
+def buildTarget(target, json, verbose, indent=''):
     ls = []
     compressors = {
         'css': 'css',
@@ -120,29 +124,29 @@ def buildTarget(target, json, indent=''):
 
         # If compressing any of the known extensions then send it directly to its same-named compressor.
         if target in compressors.keys():
-            compress(ls, compressors[target], indent)
+            compress(ls, compressors[target], verbose, indent)
         elif target == 'clean':
             clean(json.get(target))
         else:
             for subtarget in ls:
                 # For nested targets we want to keep indenting.
-                buildTarget(subtarget, ls, indent + '****** ')
+                buildTarget(subtarget, ls, verbose, indent + '****** ')
 
     # If a dict then we can't recurse any further, compress the targets and we're done (should only be css,
     # js, or json at this point).
     else:
         css = target.get('css')
         if css:
-            compress(target.get('css'), 'css', indent)
+            compress(target.get('css'), 'css', verbose, indent)
 
         js = target.get('js')
         if js:
-            compress(target.get('js'), 'js', indent)
+            compress(target.get('js'), 'js', verbose, indent)
 
         json = target.get('json')
         if json:
             # This isn't a bug, json uses the css compressor.
-            compress(target.get('json'), 'css', indent)
+            compress(target.get('json'), 'css', verbose, indent)
 
 def clean(target):
     if not target:
@@ -160,7 +164,7 @@ def clean(target):
 
     print('****** ' + bcolors.OKGREEN + 'Done' + bcolors.ENDC + '\n')
 
-def compress(target, compressor, indent=''):
+def compress(target, compressor, verbose, indent=''):
     if not indent:
         indent = '****** '
 
@@ -176,9 +180,9 @@ def compress(target, compressor, indent=''):
         name = t.get('name', '')
 
         if compressor == 'css' or compressor == 'json':
-            compressors.css.compress(src, output, dest, version, dependencies, exclude, name)
+            compressors.css.compress(src, output, dest, version, dependencies, exclude, name, verbose)
         elif compressor == 'js':
-            compressors.js.compress(src, output, dest, version, dependencies, exclude, name)
+            compressors.js.compress(src, output, dest, version, dependencies, exclude, name, verbose)
 
     print(indent + bcolors.OKGREEN + 'Done' + bcolors.ENDC + '\n')
 

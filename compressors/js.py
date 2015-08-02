@@ -1,5 +1,6 @@
 # TODO: support compressors other than YUI Compressor?
 import base_compress
+from bcolors import bcolors
 import getopt
 import itertools
 import os
@@ -71,9 +72,9 @@ def main(argv):
         elif opt in ('-j', '--jar'):
             jar = arg
 
-    compress(src, output, dest, version, dependencies, exclude, name, jar)
+    compress(src, output, dest, version, dependencies, exclude, name, verbose, jar)
 
-def compress(src, output='min.js', dest='.', version='', dependencies=[], exclude=[], name='', jar=None):
+def compress(src, output='min.js', dest='.', version='', dependencies=[], exclude=[], name='', verbose=False, jar=None):
     global builds
 
     if not src:
@@ -98,7 +99,10 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
             base_compress.make_list(dependencies)
         )
 
-        spinner = itertools.cycle(['-', '\\', '|', '/'])
+        if not verbose:
+            spinner = itertools.cycle(['-', '\\', '|', '/'])
+        else:
+            print('**************************')
 
         for script in ls:
             # If script is a named target then retrieve it from the global `builds` dict.
@@ -106,11 +110,17 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
             if script[0] == '@':
                 buff.append(''.join(builds.get(script[1:])))
             else:
-                sys.stdout.write(next(spinner))
-                sys.stdout.flush()
-                sys.stdout.write('\b')
+                if not verbose:
+                    sys.stdout.write(next(spinner))
+                    sys.stdout.flush()
+                    sys.stdout.write('\b')
+                else:
+                    print(bcolors.WARNING + 'Processing ' + bcolors.ENDC + script)
 
                 buff.append(subprocess.getoutput('java -jar ' + jar + ' ' + script))
+
+        if verbose:
+            print('**************************')
 
         if name:
             builds.update({

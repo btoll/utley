@@ -1,4 +1,5 @@
 import base_compress
+from bcolors import bcolors
 import getopt
 import json
 import os
@@ -83,9 +84,9 @@ def main(argv):
                 print(e)
                 sys.exit(1)
 
-    compress(src, output, dest, version, dependencies, exclude, name)
+    compress(src, output, dest, version, dependencies, exclude, name, verbose)
 
-def compress(src, output='min.css', dest='.', version='', dependencies=[], exclude=[], name=''):
+def compress(src, output='min.css', dest='.', version='', dependencies=[], exclude=[], name='', verbose=False):
     if not src:
         print('Error: You must provide the location of the source files.')
         sys.exit(2)
@@ -118,7 +119,13 @@ def compress(src, output='min.css', dest='.', version='', dependencies=[], exclu
         # Lastly, replace all double spaces with a single space.
         reReplaceDoubleSpaces = re.compile(r'\s{2,}')
 
+        if verbose:
+            print('**************************')
+
         for script in ls:
+            if verbose:
+                print(bcolors.WARNING + 'Processing ' + bcolors.ENDC + script)
+
             # Note that `script` is the full path name.
             with open(script) as f:
                 file_contents = f.read()
@@ -129,6 +136,9 @@ def compress(src, output='min.css', dest='.', version='', dependencies=[], exclu
             file_contents = reReplaceDoubleSpaces.sub(' ', file_contents)
 
             buff.append(file_contents)
+
+        if verbose:
+            print('**************************')
 
         base_compress.write_buffer(buff, output)
 
