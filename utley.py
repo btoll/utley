@@ -5,6 +5,8 @@ import compressors.css
 import compressors.js
 import getopt
 import os
+import shlex
+import subprocess
 import sys
 import textwrap
 
@@ -44,8 +46,8 @@ def usage():
     print(textwrap.dedent(str))
 
 def main(argv):
+    clean = False
     configFile = 'utley.json'
-    doClean = False
     targets = None
     verbose = False
 
@@ -67,7 +69,7 @@ def main(argv):
             elif opt in ('-c', '--config'):
                 configFile = arg
             elif opt == '--clean':
-                doClean = True
+                clean = True
             elif opt in ('-t', '--target'):
                 targets = base_compress.make_list(arg)
             elif opt in ('-v', '--verbose'):
@@ -75,29 +77,38 @@ def main(argv):
 
         json = base_compress.getJson(configFile)
 
-    if not doClean:
+    if not clean:
         build(json, targets, verbose)
     else:
         print(bcolors.BOLD + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.OKBLUE + 'clean' + bcolors.ENDC + ' target...')
 
-        clean(json.get('clean'))
+        doClean(json.get('clean'))
 
 def build(json={}, targets=None, verbose=False):
+    skipTargets = [
+        'clean',
+        'run'
+    ]
+
     if targets:
         for target in targets:
             buildTarget(target, json, verbose)
     else:
         # We're building all targets.
-        cleanTarget = json.get('clean')
 
+        cleanTarget = json.get('clean')
         if cleanTarget:
             print(bcolors.BOLD + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.OKBLUE + 'clean' + bcolors.ENDC + ' target...')
 
-            clean(cleanTarget)
+            doClean(cleanTarget)
+
+        runTarget = json.get('run')
+        if runTarget:
+            doRun(runTarget)
 
         for target in json:
             # Skip the clean target!
-            if target == 'clean':
+            if target in skipTargets:
                 continue
 
             buildTarget(target, json, verbose)
@@ -126,7 +137,7 @@ def buildTarget(target, json, verbose, indent=''):
         if target in compressors.keys():
             compress(ls, compressors[target], verbose, indent)
         elif target == 'clean':
-            clean(json.get(target))
+            doClean(json.get(target))
         else:
             for subtarget in ls:
                 # For nested targets we want to keep indenting.
@@ -135,6 +146,10 @@ def buildTarget(target, json, verbose, indent=''):
     # If a dict then we can't recurse any further, compress the targets and we're done (should only be css,
     # js, or json at this point).
     else:
+        runTarget = target.get('run')
+        if runTarget:
+            subprocess.call(shlex.split(runTarget))
+
         css = target.get('css')
         if css:
             compress(target.get('css'), 'css', verbose, indent)
@@ -147,22 +162,6 @@ def buildTarget(target, json, verbose, indent=''):
         if json:
             # This isn't a bug, json uses the css compressor.
             compress(target.get('json'), 'css', verbose, indent)
-
-def clean(target):
-    if not target:
-        print(bcolors.FAIL + '[ERROR]:' + bcolors.ENDC + ' Build target does not exist.')
-        sys.exit(2)
-    else:
-        for t in target:
-            run = t.get('run')
-
-            if not run:
-                print('Error: No "run" command, aborting...')
-                sys.exit(2)
-            else:
-                os.system(run)
-
-    print('****** ' + bcolors.OKGREEN + 'Done' + bcolors.ENDC + '\n')
 
 def compress(target, compressor, verbose, indent=''):
     if not indent:
@@ -186,6 +185,23 @@ def compress(target, compressor, verbose, indent=''):
 
     print(indent + bcolors.OKGREEN + 'Done' + bcolors.ENDC + '\n')
 
+def doClean(target):
+    if not target:
+        print(bcolors.FAIL + '[ERROR]' + bcolors.ENDC + ' Build target does not exist.')
+        sys.exit(2)
+    else:
+        for t in target:
+            doRun(t.get('run'))
+
+    print('****** ' + bcolors.OKGREEN + 'Done' + bcolors.ENDC + '\n')
+
+def doRun(target):
+    if not target:
+        print(bcolors.FAIL + '[ERROR]' + bcolors.ENDC + ' No "run" command, aborting.')
+        sys.exit(2)
+    else:
+        subprocess.call(shlex.split(target))
+
 def getNestedTarget(keys, ls):
     for key in keys:
         ls = ls.get(key)
@@ -193,9 +209,5 @@ def getNestedTarget(keys, ls):
     return ls
 
 if __name__ == '__main__':
-#    if len(sys.argv) == 1:
-#        usage()
-#        sys.exit(2)
-
     main(sys.argv[1:])
 
