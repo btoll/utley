@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "$(tput setaf 2)[INFO]$(tput sgr0) Installing Python build tools..."
+echo "$(tput setaf 2)[INF]$(tput sgr0) Installing Python build tools..."
 
 ln -s "$PWD"/base_compress.py /usr/local/bin/base_compress.py
 ln -s "$PWD"/compressors/css.py /usr/local/bin/css_compress.py
@@ -19,5 +19,5 @@ else
 fi
 
 echo
-echo "$(tput setaf 2)[INFO]$(tput sgr0) Installation complete."
+echo "$(tput setaf 2)[INF]$(tput sgr0) Installation complete."
 

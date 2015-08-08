@@ -101,8 +101,6 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
 
         if not verbose:
             spinner = itertools.cycle(['-', '\\', '|', '/'])
-        else:
-            print('**************************')
 
         for script in ls:
             # If script is a named target then retrieve it from the global `builds` dict.
@@ -115,12 +113,9 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
                     sys.stdout.flush()
                     sys.stdout.write('\b')
                 else:
-                    print(bcolors.WARNING + 'Processing ' + bcolors.ENDC + script)
+                    print(bcolors.BROWN + '[DEBUG]' + bcolors.YELLOW + ' Processing: ' + bcolors.ENDC + script)
 
                 buff.append(subprocess.getoutput('java -jar ' + jar + ' ' + script))
-
-        if verbose:
-            print('**************************')
 
         if name:
             builds.update({

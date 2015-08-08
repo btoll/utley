@@ -119,12 +119,9 @@ def compress(src, output='min.css', dest='.', version='', dependencies=[], exclu
         # Lastly, replace all double spaces with a single space.
         reReplaceDoubleSpaces = re.compile(r'\s{2,}')
 
-        if verbose:
-            print('**************************')
-
         for script in ls:
             if verbose:
-                print(bcolors.WARNING + 'Processing ' + bcolors.ENDC + script)
+                print(bcolors.BROWN + '[DEBUG]' + bcolors.YELLOW + ' Processing: ' + bcolors.ENDC + script)
 
             # Note that `script` is the full path name.
             with open(script) as f:
@@ -136,9 +133,6 @@ def compress(src, output='min.css', dest='.', version='', dependencies=[], exclu
             file_contents = reReplaceDoubleSpaces.sub(' ', file_contents)
 
             buff.append(file_contents)
-
-        if verbose:
-            print('**************************')
 
         base_compress.write_buffer(buff, output)
 

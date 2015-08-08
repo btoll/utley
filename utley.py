@@ -80,7 +80,7 @@ def main(argv):
     if not clean:
         build(json, targets, verbose)
     else:
-        print(bcolors.BOLD + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.OKBLUE + 'clean' + bcolors.ENDC + ' target...')
+        print(bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + 'clean' + bcolors.ENDC + ' target...')
 
         doClean(json.get('clean'))
 
@@ -98,7 +98,7 @@ def build(json={}, targets=None, verbose=False):
 
         cleanTarget = json.get('clean')
         if cleanTarget:
-            print(bcolors.BOLD + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.OKBLUE + 'clean' + bcolors.ENDC + ' target...')
+            print(bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + 'clean' + bcolors.ENDC + ' target...')
 
             doClean(cleanTarget)
 
@@ -122,7 +122,7 @@ def buildTarget(target, json, verbose, indent=''):
     }
 
     if not isinstance(target, dict):
-        makeString = bcolors.BOLD + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.OKBLUE + target + bcolors.ENDC + ' target...'
+        makeString = bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + target + bcolors.ENDC + ' target...'
 
         # Check to see if target is a subtarget (i.e., 'quizzes.chord_buider'). It will only be dot-separated
         # if explicitly passed as a build target.
@@ -183,21 +183,21 @@ def compress(target, compressor, verbose, indent=''):
         elif compressor == 'js':
             compressors.js.compress(src, output, dest, version, dependencies, exclude, name, verbose)
 
-    print(indent + bcolors.OKGREEN + 'Done' + bcolors.ENDC + '\n')
+    print(indent + bcolors.GREEN + 'Done' + bcolors.ENDC + '\n')
 
 def doClean(target):
     if not target:
-        print(bcolors.FAIL + '[ERROR]' + bcolors.ENDC + ' Build target does not exist.')
+        print(bcolors.RED + '[ERROR]' + bcolors.ENDC + ' Build target does not exist.')
         sys.exit(2)
     else:
         for t in target:
             doRun(t.get('run'))
 
-    print('****** ' + bcolors.OKGREEN + 'Done' + bcolors.ENDC + '\n')
+    print('****** ' + bcolors.GREEN + 'Done' + bcolors.ENDC + '\n')
 
 def doRun(target):
     if not target:
-        print(bcolors.FAIL + '[ERROR]' + bcolors.ENDC + ' No "run" command, aborting.')
+        print(bcolors.RED + '[ERROR]' + bcolors.ENDC + ' No "run" command, aborting.')
         sys.exit(2)
     else:
         subprocess.call(shlex.split(target))
