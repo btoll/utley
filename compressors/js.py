@@ -113,7 +113,7 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
                     sys.stdout.flush()
                     sys.stdout.write('\b')
                 else:
-                    print(bcolors.BROWN + '[DEBUG]' + bcolors.YELLOW + ' Processing: ' + bcolors.ENDC + script)
+                    print(bcolors.ON_BLUE + bcolors.BROWN + '[DEBUG]' + bcolors.ON_WHITE + bcolors.YELLOW + ' Processing -> ' + bcolors.ENDC + script)
 
                 buff.append(subprocess.getoutput('java -jar ' + jar + ' ' + script))
 

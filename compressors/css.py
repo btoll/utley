@@ -121,7 +121,7 @@ def compress(src, output='min.css', dest='.', version='', dependencies=[], exclu
 
         for script in ls:
             if verbose:
-                print(bcolors.BROWN + '[DEBUG]' + bcolors.YELLOW + ' Processing: ' + bcolors.ENDC + script)
+                print(bcolors.ON_BLUE + bcolors.BROWN + '[DEBUG]' + bcolors.ON_WHITE +  bcolors.YELLOW + ' Processing -> ' + bcolors.ENDC + script)
 
             # Note that `script` is the full path name.
             with open(script) as f:
