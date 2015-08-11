@@ -115,7 +115,7 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
                 else:
                     print(bcolors.ON_BLUE + bcolors.BROWN + '[DEBUG]' + bcolors.ON_WHITE + bcolors.YELLOW + ' Processing -> ' + bcolors.ENDC + script)
 
-                buff.append(subprocess.getoutput('java -jar ' + jar + ' ' + script))
+                buff.append(subprocess.getoutput('babel ' + script + ' | java -jar ' + jar + ' --type js'))
 
         if name:
             builds.update({
