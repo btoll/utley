@@ -3,6 +3,18 @@ import os
 import re
 import sys
 
+compressors = {
+    'css': 'css',
+    'js': 'js',
+    'json': 'css'
+}
+
+whitelistTargets = [
+    'clean',
+    'run',
+    'test'
+]
+
 def filter_exclusions(root, exclude=[], suffix='js'):
     # Any element in the exclude list is assumed to have an absolute path to the source directory.
     matches = []

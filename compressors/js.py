@@ -110,6 +110,7 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
             else:
                 if not verbose:
                     sys.stdout.write(next(spinner))
+                    sys.stdout.write('\b')
                     sys.stdout.flush()
                     sys.stdout.write('\b')
                 else:

@@ -1,4 +1,5 @@
 # TODO: Add global var for visual spacing '******'
+# TODO: accessors for get/set configFile!
 import base_compress
 from bcolors import bcolors
 import compressors.css
@@ -16,10 +17,11 @@ def usage():
 
         # Build all targets (assumes an `utley.json` build file).
         utley
+        utley --all
+        # Note that the above are synonyms.
 
         # Specify a different build file than the default `utley.json`.
         utley --config=foo.json
-
         # Build only the CSS target.
         utley --target=css
 
@@ -38,9 +40,18 @@ def usage():
         # Clean.
         utley --clean
 
+        # Lint.
+        utley --lint
+
+        # Test.
+        utley --test
+
+        --all          Run all build targets.
         --clean        Run the `clean` build target.
-        --config, -c   The location of the build file. Defaults to 'utley.json'.
+        --config, -c   The location of the build file. Defaults to `utley.json`.
+        --lint         Run the `lint` build target.
         --target, -t   Specify build targets (comma-separated).
+        --test         Run the `test` build target.
         --verbose, -v  Print build information.
     '''
     print(textwrap.dedent(str))
@@ -48,15 +59,18 @@ def usage():
 def main(argv):
     clean = False
     configFile = 'utley.json'
+    lint = False
+    runAll = False
+    target = None
     targets = None
+    test = False
     verbose = False
 
-    # If there are no given arguments, assume an utley.json file and both build targets.
     if len(argv) == 0:
-        json = base_compress.getJson()
+        runAll = True
     else:
         try:
-            opts, args = getopt.getopt(argv, 'hc:t:v', ['help', 'config=', 'clean', 'target=', 'verbose'])
+            opts, args = getopt.getopt(argv, 'hc:t:v', ['help', 'all', 'config=', 'clean', 'lint', 'target=', 'test', 'verbose'])
         except getopt.GetoptError:
             print('Error: Unrecognized flag.')
             usage()
@@ -66,60 +80,48 @@ def main(argv):
             if opt in ('-h', '--help'):
                 usage()
                 sys.exit(0)
+            elif opt == '--all':
+                runAll = True
             elif opt in ('-c', '--config'):
                 configFile = arg
             elif opt == '--clean':
-                clean = True
+                target = 'clean'
+            elif opt == '--lint':
+                target = 'lint'
             elif opt in ('-t', '--target'):
                 targets = base_compress.make_list(arg)
+            elif opt == '--test':
+                target = 'test'
             elif opt in ('-v', '--verbose'):
                 verbose = True
 
-        json = base_compress.getJson(configFile)
+    if runAll:
+        for t in base_compress.whitelistTargets:
+            doWhitelistTarget(t)
 
-    if not clean:
-        build(json, targets, verbose)
+        initiateBuild(None, verbose, configFile)
+    elif target and target in base_compress.whitelistTargets:
+        doWhitelistTarget(target)
+    elif not target:
+        initiateBuild(targets, verbose, configFile)
     else:
-        print(bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + 'clean' + bcolors.ENDC + ' target...')
+        print(bcolors.RED + '[ERROR]' + bcolors.ENDC + ' No "' + target + '" target has been configured, aborting.')
 
-        doClean(json.get('clean'))
-
-def build(json={}, targets=None, verbose=False):
-    skipTargets = [
-        'clean',
-        'run'
-    ]
+def initiateBuild(targets=None, verbose=False, configFile='utley.json'):
+    json = base_compress.getJson(configFile)
 
     if targets:
         for target in targets:
             buildTarget(target, json, verbose)
     else:
-        # We're building all targets.
-
-        cleanTarget = json.get('clean')
-        if cleanTarget:
-            print(bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + 'clean' + bcolors.ENDC + ' target...')
-
-            doClean(cleanTarget)
-
-        runTarget = json.get('run')
-        if runTarget:
-            doRun(runTarget)
-
         for target in json:
-            # Skip the clean target!
-            if target in skipTargets:
+            if target in base_compress.whitelistTargets:
                 continue
 
             buildTarget(target, json, verbose)
 
 def buildTarget(target, json, verbose, indent=''):
     ls = []
-    compressors = {
-        'css': 'css',
-        'js': 'js',
-        'json': 'css'
-    }
 
     if not isinstance(target, dict):
         makeString = bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + target + bcolors.ENDC + ' target...'
@@ -128,46 +130,37 @@ def buildTarget(target, json, verbose, indent=''):
         # if explicitly passed as a build target.
         if '.' in target:
             print(makeString)
+
             ls = getNestedTarget(target.split('.'), json)
+            for key in target.split('.'):
+                ls = ls.get(key)
         else:
             print(indent + makeString)
             ls = json.get(target)
 
         # If compressing any of the known extensions then send it directly to its same-named compressor.
-        if target in compressors.keys():
-            compress(ls, compressors[target], verbose, indent)
-        elif target == 'clean':
-            doClean(json.get(target))
+        if target in base_compress.compressors.keys():
+            compress(ls, target, base_compress.compressors[target], verbose, indent)
+        elif target in base_compress.whitelistTargets:
+            doWhitelistTarget(target, json.get(target))
         else:
             for subtarget in ls:
                 # For nested targets we want to keep indenting.
                 buildTarget(subtarget, ls, verbose, indent + '****** ')
 
-    # If a dict then we can't recurse any further, compress the targets and we're done (should only be css,
-    # js, or json at this point).
     else:
-        runTarget = target.get('run')
-        if runTarget:
-            subprocess.call(shlex.split(runTarget))
+        # If a dict then we can't recurse any further, build the whitelisted targets and we're done.
+        for key, value in target.items():
+            if key in base_compress.compressors.keys():
+                compress(target.get(key), key, base_compress.compressors[key], verbose, indent)
+            elif key in base_compress.whitelistTargets:
+                doWhitelistTarget(key, target.get(key))
 
-        css = target.get('css')
-        if css:
-            compress(target.get('css'), 'css', verbose, indent)
-
-        js = target.get('js')
-        if js:
-            compress(target.get('js'), 'js', verbose, indent)
-
-        json = target.get('json')
-        if json:
-            # This isn't a bug, json uses the css compressor.
-            compress(target.get('json'), 'css', verbose, indent)
-
-def compress(target, compressor, verbose, indent=''):
+def compress(target, targetName, compressor, verbose, indent=''):
     if not indent:
         indent = '****** '
 
-    print(indent + 'Using compressor: ' + bcolors.UNDERLINE + compressor + bcolors.ENDC)
+    print(indent + 'Building target ' + bcolors.BROWN + targetName + bcolors.ENDC + ' with compressor: ' + bcolors.UNDERLINE + compressor + bcolors.ENDC)
 
     for t in target:
         src = t.get('src')
@@ -185,16 +178,6 @@ def compress(target, compressor, verbose, indent=''):
 
     print(indent + bcolors.GREEN + 'Done' + bcolors.ENDC + '\n')
 
-def doClean(target):
-    if not target:
-        print(bcolors.RED + '[ERROR]' + bcolors.ENDC + ' Build target does not exist.')
-        sys.exit(2)
-    else:
-        for t in target:
-            doRun(t.get('run'))
-
-    print('****** ' + bcolors.GREEN + 'Done' + bcolors.ENDC + '\n')
-
 def doRun(target):
     if not target:
         print(bcolors.RED + '[ERROR]' + bcolors.ENDC + ' No "run" command, aborting.')
@@ -202,11 +185,18 @@ def doRun(target):
     else:
         subprocess.call(shlex.split(target))
 
-def getNestedTarget(keys, ls):
-    for key in keys:
-        ls = ls.get(key)
+def doWhitelistTarget(name, target=None, json=base_compress.getJson('utley.json')):
+    print(bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + name + bcolors.ENDC + ' target...')
 
-    return ls
+    if not target:
+        target = json.get(name)
+
+    # Let's not throw or exit early if a whitelisted target doesn't exist.
+    if target:
+        for t in target:
+            doRun(t.get('run'))
+
+    print('****** ' + bcolors.GREEN + 'Done' + bcolors.ENDC + '\n')
 
 if __name__ == '__main__':
     main(sys.argv[1:])
