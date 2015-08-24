@@ -69,9 +69,9 @@ def main(argv):
         try:
             opts, args = getopt.getopt(argv, 'hc:t:v', ['help', 'all', 'config=', 'clean', 'lint', 'target=', 'test', 'verbose'])
         except getopt.GetoptError:
-            print('Error: Unrecognized flag.')
+            print(bcolors.RED + '[ERROR]' + bcolors.ENDC + ' Unrecognized flag.')
             usage()
-            sys.exit(2)
+            sys.exit(1)
 
         for opt, arg in opts:
             if opt in ('-h', '--help'):
@@ -179,7 +179,9 @@ def doRun(target):
     if not target:
         print(bcolors.YELLOW + '[WARNING]' + bcolors.ENDC + ' Expecting a "run" command but none found.')
     else:
-        subprocess.call(shlex.split(target))
+        if subprocess.call(shlex.split(target)) > 0:
+            print(bcolors.RED + '[ERROR]' + bcolors.ENDC + ' There has been a problem!')
+            sys.exit(1)
 
 def doWhitelistTarget(name, target=None, json=base_compress.getJson('utley.json')):
     print(bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + name + bcolors.ENDC + ' target...')

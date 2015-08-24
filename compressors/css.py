@@ -47,7 +47,7 @@ def main(argv):
     except getopt.GetoptError:
         print('Error: Unrecognized flag.')
         usage()
-        sys.exit(2)
+        sys.exit(1)
 
     for opt, arg in opts:
         if opt in ('-h', '--help'):
@@ -89,7 +89,7 @@ def main(argv):
 def compress(src, output='min.css', dest='.', version='', dependencies=[], exclude=[], name='', verbose=False):
     if not src:
         print('Error: You must provide the location of the source files.')
-        sys.exit(2)
+        sys.exit(1)
 
     try:
         buff = []
@@ -144,7 +144,7 @@ def compress(src, output='min.css', dest='.', version='', dependencies=[], exclu
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         usage()
-        sys.exit(2)
+        sys.exit(0)
 
     main(sys.argv[1:])
 

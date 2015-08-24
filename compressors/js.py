@@ -51,7 +51,7 @@ def main(argv):
     except getopt.GetoptError:
         print('Error: Unrecognized flag.')
         usage()
-        sys.exit(2)
+        sys.exit(1)
 
     for opt, arg in opts:
         if opt in ('-h', '--help'):
@@ -79,7 +79,7 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
 
     if not src:
         print('Error: You must provide the location of the source files.')
-        sys.exit(2)
+        sys.exit(1)
 
     if not jar:
         # Provide an alternate location to the jar to override the environment variable (if set).
@@ -88,7 +88,7 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
             jar = input('Location of YUI Compressor jar (set a YUICOMPRESSOR environment variable to skip this step): ')
             if not jar:
                 print('Error: You must provide the location of YUI Compressor jar.')
-                sys.exit(2)
+                sys.exit(1)
 
     try:
         buff = []
@@ -133,7 +133,7 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         usage()
-        sys.exit(2)
+        sys.exit(0)
 
     main(sys.argv[1:])
 
