@@ -57,13 +57,10 @@ def usage():
     print(textwrap.dedent(str))
 
 def main(argv):
-    clean = False
     configFile = 'utley.json'
-    lint = False
     runAll = False
     target = None
     targets = None
-    test = False
     verbose = False
 
     if len(argv) == 0:

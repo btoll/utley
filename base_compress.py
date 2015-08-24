@@ -11,7 +11,7 @@ compressors = {
 
 whitelistTargets = [
     'clean',
-    'run',
+    'lint',
     'test'
 ]
 
