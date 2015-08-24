@@ -12,6 +12,7 @@ What is the license?
 Build all targets (assumes an `utley.json` build file).
 
     utley
+    utley --all
 
 Specify a different build file than the default `utley.json`.
 
@@ -41,10 +42,22 @@ Clean.
 
     utley --clean
 
+Lint.
+
+    utley --lint
+
+Test.
+
+    utley --test
+
 USAGE:
 
+    --all          Run all build targets.
     --clean        Run the `clean` build target.
-    --config, -c   The location of the build file. Defaults to 'utley.json'.
-    --target, -t   Specify build targets (comma-separated)
+    --config, -c   The location of the build file. Defaults to `utley.json`.
+    --lint         Run the `lint` build target.
+    --silent       Does not print log information to STDOUT (will print ERROR messages).
+    --target, -t   Specify build targets (comma-separated).
+    --test         Run the `test` build target.
     --verbose, -v  Print build information.
 

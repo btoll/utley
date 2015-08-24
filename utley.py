@@ -18,7 +18,6 @@ def usage():
         # Build all targets (assumes an `utley.json` build file).
         utley
         utley --all
-        # Note that the above are synonyms.
 
         # Specify a different build file than the default `utley.json`.
         utley --config=foo.json
