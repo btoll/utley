@@ -177,8 +177,7 @@ def compress(target, targetName, compressor, verbose, indent=''):
 
 def doRun(target):
     if not target:
-        print(bcolors.RED + '[ERROR]' + bcolors.ENDC + ' No "run" command, aborting.')
-        sys.exit(2)
+        print(bcolors.YELLOW + '[WARNING]' + bcolors.ENDC + ' Expecting a "run" command but none found.')
     else:
         subprocess.call(shlex.split(target))
 
