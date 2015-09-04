@@ -134,23 +134,17 @@ def buildTarget(target, json, verbose=False, silent=False, indent=''):
                 print(makeString)
 
             ls = getNestedTarget(target.split('.'), json)
-            for key in target.split('.'):
-                ls = ls.get(key)
         else:
             if not silent:
                 print(indent + makeString)
 
+            if isTargetReference(target):
+                target = target[1:]
+
             ls = json.get(target)
 
         # If compressing any of the known extensions then send it directly to its same-named compressor.
-        if target in base_compress.compressors.keys():
-            compress(ls, target, base_compress.compressors[target], verbose, silent, indent)
-        elif target in base_compress.whitelistTargets:
-            doWhitelistTarget(target, silent, json.get(target))
-        else:
-            for subtarget in ls:
-                # For nested targets we want to keep indenting.
-                buildTarget(subtarget, ls, verbose, silent, indent + '****** ')
+        doTarget(json, target, ls, verbose, silent, indent)
 
     else:
         # If a dict then we can't recurse any further, build the whitelisted targets and we're done.
@@ -192,6 +186,24 @@ def doRun(target, silent=False):
             print(bcolors.RED + '[ERROR]' + bcolors.ENDC + ' There has been a problem!')
             sys.exit(1)
 
+def doTarget(json, target, ls, verbose, silent, indent):
+    # If compressing any of the known extensions then send it directly to its same-named compressor.
+    if target in base_compress.compressors.keys():
+        compress(ls, target, base_compress.compressors[target], verbose, silent, indent)
+    elif target in base_compress.whitelistTargets:
+        doWhitelistTarget(target, silent, json.get(target))
+    else:
+        if not ls:
+            ls = json
+
+        for subtarget in ls:
+            # For nested targets we want to keep indenting.
+            if isTargetReference(subtarget):
+                subtarget = subtarget[1:]
+                ls = json
+
+            buildTarget(subtarget, ls, verbose, silent, indent + '****** ')
+
 def doWhitelistTarget(name, silent=False, target=None, json=base_compress.getJson('utley.json')):
     if not silent:
         print(bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + name + bcolors.ENDC + ' target...')
@@ -206,6 +218,15 @@ def doWhitelistTarget(name, silent=False, target=None, json=base_compress.getJso
 
     if not silent:
         print('****** ' + bcolors.GREEN + 'Done' + bcolors.ENDC + '\n')
+
+def getNestedTarget(keys, ls):
+    for key in keys:
+        ls = ls.get(key)
+
+    return ls
+
+def isTargetReference(target):
+    return isinstance(target, str) and target[0] == '#'
 
 if __name__ == '__main__':
     main(sys.argv[1:])
