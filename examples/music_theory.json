@@ -3,6 +3,19 @@
         "run": "rm -rf build"
     }],
 
+    "lint": [{
+        "run": "eslint app"
+    }],
+
+    // You can refer to other targets by reference.
+    "build": [
+        "#clean",
+        "#css",
+        "#js",
+        "#json",
+        "#quizzes.key_signature"
+    ],
+
     // The `css` target will produce multiple build artifacts.
     "css": [{
         "src": [

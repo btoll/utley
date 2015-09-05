@@ -2,7 +2,7 @@
 
 echo "$(tput setaf 2)[INF]$(tput sgr0) Installing Python build tools..."
 
-ln -s "$PWD"/base_compress.py /usr/local/bin/base_compress.py
+ln -s "$PWD"/lib/base.py /usr/local/bin/base.py
 ln -s "$PWD"/compressors/css.py /usr/local/bin/css_compress.py
 ln -s "$PWD"/compressors/js.py /usr/local/bin/js_compress.py
 ln -s "$PWD"/utley.py /usr/local/bin/utley.py

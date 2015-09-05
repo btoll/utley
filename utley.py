@@ -1,60 +1,14 @@
 # TODO: Add global var for visual spacing '******'
 # TODO: accessors for get/set configFile!
-import base_compress
-from bcolors import bcolors
-import compressors.css
-import compressors.js
+import lib.base
+from lib.bcolors import bcolors
+from lib.usage import usage
+import lib.compressors.css
+import lib.compressors.js
 import getopt
-import os
 import shlex
 import subprocess
 import sys
-import textwrap
-
-def usage():
-    str = '''
-        USAGE:
-
-        # Build all targets (assumes an `utley.json` build file).
-        utley
-        utley --all
-
-        # Specify a different build file than the default `utley.json`.
-        utley --config=foo.json
-        # Build only the CSS target.
-        utley --target=css
-
-        # Build only the JavaScript target.
-        utley --target=js
-
-        # Build multiple targets.
-        utley --target=js,css,quizzes
-
-        # Build a nested subtarget.
-        utley --target=foo.bar.quux
-
-        # Build whatever you want.
-        utley --target=clean,css,quizzes.chord_builder,my_custom_target
-
-        # Clean.
-        utley --clean
-
-        # Lint.
-        utley --lint
-
-        # Test.
-        utley --test
-
-        --all          Run all build targets.
-        --clean        Run the `clean` build target.
-        --config, -c   The location of the build file. Defaults to `utley.json`.
-        --lint         Run the `lint` build target.
-        --silent       Does not print log information to STDOUT (will print ERROR messages).
-        --target, -t   Specify build targets (comma-separated).
-        --test         Run the `test` build target.
-        --verbose, -v  Print build information.
-    '''
-    print(textwrap.dedent(str))
 
 def main(argv):
     configFile = 'utley.json'
@@ -89,18 +43,18 @@ def main(argv):
             elif opt == '--silent':
                 silent = True
             elif opt in ('-t', '--target'):
-                targets = base_compress.make_list(arg)
+                targets = lib.base.make_list(arg)
             elif opt == '--test':
                 target = 'test'
             elif opt in ('-v', '--verbose'):
                 verbose = True
 
     if runAll:
-        for t in base_compress.whitelistTargets:
+        for t in lib.base.whitelistTargets:
             doWhitelistTarget(t, silent)
 
         initiateBuild(None, verbose, silent, configFile)
-    elif target and target in base_compress.whitelistTargets:
+    elif target and target in lib.base.whitelistTargets:
         doWhitelistTarget(target, silent)
     elif not target:
         initiateBuild(targets, verbose, silent, configFile)
@@ -109,14 +63,14 @@ def main(argv):
         sys.exit(1)
 
 def initiateBuild(targets=None, verbose=False, silent=False, configFile='utley.json'):
-    json = base_compress.getJson(configFile)
+    json = lib.base.getJson(configFile)
 
     if targets:
         for target in targets:
             buildTarget(target, json, verbose, silent)
     else:
         for target in json:
-            if target in base_compress.whitelistTargets:
+            if target in lib.base.whitelistTargets:
                 continue
 
             buildTarget(target, json, verbose, silent)
@@ -149,9 +103,9 @@ def buildTarget(target, json, verbose=False, silent=False, indent=''):
     else:
         # If a dict then we can't recurse any further, build the whitelisted targets and we're done.
         for key, value in target.items():
-            if key in base_compress.compressors.keys():
-                compress(target.get(key), key, base_compress.compressors[key], verbose, silent, indent)
-            elif key in base_compress.whitelistTargets:
+            if key in lib.base.compressors.keys():
+                compress(target.get(key), key, lib.base.compressors[key], verbose, silent, indent)
+            elif key in lib.base.whitelistTargets:
                 doWhitelistTarget(key, silent, target.get(key))
 
 def compress(target, targetName, compressor, verbose=False, silent=False, indent=''):
@@ -171,9 +125,9 @@ def compress(target, targetName, compressor, verbose=False, silent=False, indent
         name = t.get('name', '')
 
         if compressor == 'css' or compressor == 'json':
-            compressors.css.compress(src, output, dest, version, dependencies, exclude, name, verbose)
+            lib.compressors.css.compress(src, output, dest, version, dependencies, exclude, name, verbose)
         elif compressor == 'js':
-            compressors.js.compress(src, output, dest, version, dependencies, exclude, name, verbose)
+            lib.compressors.js.compress(src, output, dest, version, dependencies, exclude, name, verbose)
 
     if not silent:
         print(indent + bcolors.GREEN + 'Done' + bcolors.ENDC + '\n')
@@ -188,9 +142,9 @@ def doRun(target, silent=False):
 
 def doTarget(json, target, ls, verbose, silent, indent):
     # If compressing any of the known extensions then send it directly to its same-named compressor.
-    if target in base_compress.compressors.keys():
-        compress(ls, target, base_compress.compressors[target], verbose, silent, indent)
-    elif target in base_compress.whitelistTargets:
+    if target in lib.base.compressors.keys():
+        compress(ls, target, lib.base.compressors[target], verbose, silent, indent)
+    elif target in lib.base.whitelistTargets:
         doWhitelistTarget(target, silent, json.get(target))
     else:
         if not ls:
@@ -204,7 +158,7 @@ def doTarget(json, target, ls, verbose, silent, indent):
 
             buildTarget(subtarget, ls, verbose, silent, indent + '****** ')
 
-def doWhitelistTarget(name, silent=False, target=None, json=base_compress.getJson('utley.json')):
+def doWhitelistTarget(name, silent=False, target=None, json=lib.base.getJson('utley.json')):
     if not silent:
         print(bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + name + bcolors.ENDC + ' target...')
 
