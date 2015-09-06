@@ -3,7 +3,7 @@ from lib.bcolors import bcolors
 import re
 import sys
 
-def compress(src, output='min.css', dest='.', version='', dependencies=[], exclude=[], name='', verbose=False):
+def compress(src, output='min.css', dest='.', version='', dependencies=[], exclude=[], name='', verbose=False, silent=False):
     if not src:
         print('Error: You must provide the location of the source files.')
         sys.exit(1)
@@ -38,7 +38,7 @@ def compress(src, output='min.css', dest='.', version='', dependencies=[], exclu
 
         for script in ls:
             if verbose:
-                print(lib.bcolors.ON_BLUE + lib.bcolors.BROWN + '[DEBUG]' + lib.bcolors.ON_WHITE +  lib.bcolors.YELLOW + ' Processing -> ' + lib.bcolors.ENDC + script)
+                print(bcolors.ON_BLUE + bcolors.BROWN + '[DEBUG]' + bcolors.ON_WHITE +  bcolors.YELLOW + ' Processing -> ' + bcolors.ENDC + script)
 
             # Note that `script` is the full path name.
             with open(script) as f:

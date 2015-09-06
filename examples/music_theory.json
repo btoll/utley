@@ -10,10 +10,11 @@
     // You can refer to other targets by reference.
     "build": [
         "#clean",
+        "#lint",
         "#css",
         "#js",
         "#json",
-        "#quizzes.key_signature"
+        "#quizzes"
     ],
 
     // The `css` target will produce multiple build artifacts.

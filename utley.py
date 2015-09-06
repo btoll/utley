@@ -1,4 +1,3 @@
-# TODO: accessors for get/set configFile!
 import lib.base
 from lib.usage import usage
 import lib.compressors.css
@@ -100,11 +99,11 @@ def buildTarget(target, json, verbose=False, silent=False, indent=''):
         # If a dict then we can't recurse any further, build the whitelisted targets and we're done.
         for key, value in target.items():
             if key in lib.base.compressors.keys():
-                compress(target.get(key), key, lib.base.compressors[key], verbose, silent, indent)
+                doCompress(target.get(key), key, lib.base.compressors[key], verbose, silent, indent)
             elif key in lib.base.whitelistTargets:
                 doWhitelistTarget(key, silent, target.get(key))
 
-def compress(target, targetName, compressor, verbose=False, silent=False, indent=''):
+def doCompress(target, targetName, compressor, verbose=False, silent=False, indent=''):
     if not indent:
         indent = '****** '
 
@@ -121,52 +120,49 @@ def compress(target, targetName, compressor, verbose=False, silent=False, indent
         name = t.get('name', '')
 
         if compressor == 'css' or compressor == 'json':
-            lib.compressors.css.compress(src, output, dest, version, dependencies, exclude, name, verbose)
+            lib.compressors.css.compress(src, output, dest, version, dependencies, exclude, name, verbose, silent)
         elif compressor == 'js':
-            lib.compressors.js.compress(src, output, dest, version, dependencies, exclude, name, verbose)
+            lib.compressors.js.compress(src, output, dest, version, dependencies, exclude, name, verbose, silent)
 
     if not silent:
         print(indent + lib.message.end_block())
 
-def doRun(target, silent=False):
-    if not target and not silent:
-        print(lib.message.warning())
-    else:
-        if subprocess.call(shlex.split(target)) > 0:
-            print(lib.message.error('There has been a problem!'))
-            sys.exit(1)
-
 def doTarget(json, target, ls, verbose, silent, indent):
     # If compressing any of the known extensions then send it directly to its same-named compressor.
     if target in lib.base.compressors.keys():
-        compress(ls, target, lib.base.compressors[target], verbose, silent, indent)
+        doCompress(ls, target, lib.base.compressors[target], verbose, silent, indent)
     elif target in lib.base.whitelistTargets:
         doWhitelistTarget(target, silent, json.get(target))
     else:
-        if not ls:
-            ls = json
-
         for subtarget in ls:
             # For nested targets we want to keep indenting.
             if isTargetReference(subtarget):
                 subtarget = subtarget[1:]
-                ls = json
-            else:
-                indent += '****** '
 
-            buildTarget(subtarget, ls, verbose, silent, indent)
+                # We only operate on dictionaries.
+                if not isinstance(ls, dict):
+                    ls = json
+
+            buildTarget(subtarget, ls, verbose, silent,  '****** ')
 
 def doWhitelistTarget(name, silent=False, target=None, json=lib.base.getJson('utley.json')):
-    if not silent:
-        print(lib.message.open_block(name))
-
     if not target:
         target = json.get(name)
 
     # Let's not throw or exit early if a whitelisted target doesn't exist.
     if target:
         for t in target:
-            doRun(t.get('run'), silent)
+            t = t.get('run')
+
+            if not t and not silent:
+                print(lib.message.warning())
+            else:
+                if not silent:
+                    print(lib.message.open_block(name))
+
+                if subprocess.call(shlex.split(t)) > 0:
+                    print(lib.message.error('There has been a problem!'))
+                    sys.exit(1)
 
     if not silent:
         print('****** ' + lib.message.end_block())

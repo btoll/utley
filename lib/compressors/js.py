@@ -8,7 +8,7 @@ import sys
 
 builds = {}
 
-def compress(src, output='min.js', dest='.', version='', dependencies=[], exclude=[], name='', verbose=False, jar=None):
+def compress(src, output='min.js', dest='.', version='', dependencies=[], exclude=[], name='', verbose=False, silent=False, jar=None):
     global builds
 
     if not src:
@@ -33,7 +33,7 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
             lib.base.make_list(dependencies)
         )
 
-        if not verbose:
+        if not silent and not verbose:
             spinner = itertools.cycle(['-', '\\', '|', '/'])
 
         for script in ls:
@@ -42,13 +42,13 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
             if script[0] == '@':
                 buff.append(''.join(builds.get(script[1:])))
             else:
-                if not verbose:
+                if not silent and not verbose:
                     sys.stdout.write(next(spinner))
                     sys.stdout.write('\b')
                     sys.stdout.flush()
                     sys.stdout.write('\b')
-                else:
-                    print(lib.bcolors.ON_BLUE + lib.bcolors.BROWN + '[DEBUG]' + lib.bcolors.ON_WHITE + lib.bcolors.YELLOW + ' Processing -> ' + lib.bcolors.ENDC + script)
+                elif verbose:
+                    print(bcolors.ON_BLUE + bcolors.BROWN + '[DEBUG]' + bcolors.ON_WHITE + bcolors.YELLOW + ' Processing -> ' + bcolors.ENDC + script)
 
                 buff.append(subprocess.getoutput('babel ' + script + ' | java -jar ' + jar + ' --type js'))
 
