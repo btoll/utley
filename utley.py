@@ -1,10 +1,9 @@
-# TODO: Add global var for visual spacing '******'
 # TODO: accessors for get/set configFile!
 import lib.base
-from lib.bcolors import bcolors
 from lib.usage import usage
 import lib.compressors.css
 import lib.compressors.js
+import lib.message
 import getopt
 import shlex
 import subprocess
@@ -24,7 +23,7 @@ def main(argv):
         try:
             opts, args = getopt.getopt(argv, 'hc:t:v', ['help', 'all', 'config=', 'clean', 'lint', 'silent', 'target=', 'test', 'verbose'])
         except getopt.GetoptError:
-            print(bcolors.RED + '[ERROR]' + bcolors.ENDC + ' Unrecognized flag.')
+            print(lib.message.error('Unrecognized flag!'))
             usage()
             sys.exit(1)
 
@@ -59,7 +58,7 @@ def main(argv):
     elif not target:
         initiateBuild(targets, verbose, silent, configFile)
     else:
-        print(bcolors.RED + '[ERROR]' + bcolors.ENDC + ' No "' + target + '" target has been configured, aborting.')
+        print(lib.message.abort(target))
         sys.exit(1)
 
 def initiateBuild(targets=None, verbose=False, silent=False, configFile='utley.json'):
@@ -79,25 +78,22 @@ def buildTarget(target, json, verbose=False, silent=False, indent=''):
     ls = []
 
     if not isinstance(target, dict):
-        makeString = bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + target + bcolors.ENDC + ' target...'
-
         # Check to see if target is a subtarget (i.e., 'quizzes.chord_buider'). It will only be dot-separated
         # if explicitly passed as a build target.
         if '.' in target:
             if not silent:
-                print(makeString)
+                print(lib.message.open_block(target))
 
             ls = getNestedTarget(target.split('.'), json)
         else:
             if not silent:
-                print(indent + makeString)
+                print(indent + lib.message.open_block(target))
 
             if isTargetReference(target):
                 target = target[1:]
 
             ls = json.get(target)
 
-        # If compressing any of the known extensions then send it directly to its same-named compressor.
         doTarget(json, target, ls, verbose, silent, indent)
 
     else:
@@ -113,7 +109,7 @@ def compress(target, targetName, compressor, verbose=False, silent=False, indent
         indent = '****** '
 
     if not silent:
-        print(indent + 'Building target ' + bcolors.BROWN + targetName + bcolors.ENDC + ' with compressor: ' + bcolors.UNDERLINE + compressor + bcolors.ENDC)
+        print(indent + lib.message.building_target(targetName, compressor))
 
     for t in target:
         src = t.get('src')
@@ -130,14 +126,14 @@ def compress(target, targetName, compressor, verbose=False, silent=False, indent
             lib.compressors.js.compress(src, output, dest, version, dependencies, exclude, name, verbose)
 
     if not silent:
-        print(indent + bcolors.GREEN + 'Done' + bcolors.ENDC + '\n')
+        print(indent + lib.message.end_block())
 
 def doRun(target, silent=False):
     if not target and not silent:
-        print(bcolors.YELLOW + '[WARNING]' + bcolors.ENDC + ' Expecting a "run" command but none found.')
+        print(lib.message.warning())
     else:
         if subprocess.call(shlex.split(target)) > 0:
-            print(bcolors.RED + '[ERROR]' + bcolors.ENDC + ' There has been a problem!')
+            print(lib.message.error('There has been a problem!'))
             sys.exit(1)
 
 def doTarget(json, target, ls, verbose, silent, indent):
@@ -155,12 +151,14 @@ def doTarget(json, target, ls, verbose, silent, indent):
             if isTargetReference(subtarget):
                 subtarget = subtarget[1:]
                 ls = json
+            else:
+                indent += '****** '
 
-            buildTarget(subtarget, ls, verbose, silent, indent + '****** ')
+            buildTarget(subtarget, ls, verbose, silent, indent)
 
 def doWhitelistTarget(name, silent=False, target=None, json=lib.base.getJson('utley.json')):
     if not silent:
-        print(bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + name + bcolors.ENDC + ' target...')
+        print(lib.message.open_block(name))
 
     if not target:
         target = json.get(name)
@@ -171,7 +169,7 @@ def doWhitelistTarget(name, silent=False, target=None, json=lib.base.getJson('ut
             doRun(t.get('run'), silent)
 
     if not silent:
-        print('****** ' + bcolors.GREEN + 'Done' + bcolors.ENDC + '\n')
+        print('****** ' + lib.message.end_block())
 
 def getNestedTarget(keys, ls):
     for key in keys:
