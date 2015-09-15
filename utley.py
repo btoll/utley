@@ -20,7 +20,7 @@ def main(argv):
         runAll = True
     else:
         try:
-            opts, args = getopt.getopt(argv, 'hc:t:v', ['help', 'all', 'config=', 'clean', 'lint', 'silent', 'target=', 'test', 'verbose'])
+            opts, args = getopt.getopt(argv, 'hc:t:v', ['help', 'all', 'config=', 'clean', 'docs', 'lint', 'silent', 'target=', 'test', 'verbose'])
         except getopt.GetoptError:
             print(lib.message.error('Unrecognized flag!'))
             usage()
@@ -36,6 +36,8 @@ def main(argv):
                 configFile = arg
             elif opt == '--clean':
                 target = 'clean'
+            elif opt == '--docs':
+                target = 'docs'
             elif opt == '--lint':
                 target = 'lint'
             elif opt == '--silent':
