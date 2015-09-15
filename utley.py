@@ -4,7 +4,6 @@ import lib.compressors.css
 import lib.compressors.js
 import lib.message
 import getopt
-import shlex
 import subprocess
 import sys
 
@@ -162,9 +161,9 @@ def doWhitelistTarget(name, silent=False, target=None, json=lib.base.getJson('ut
                 if not silent:
                     print(lib.message.open_block(name))
 
-                if subprocess.call(shlex.split(t)) > 0:
-                    print(lib.message.error('There has been a problem!'))
-                    sys.exit(1)
+                # Instead of handling a non-zero exit code here and throwing, each shell command will have
+                # to clean up after itself.
+                subprocess.call(t, shell=True)
 
     if not silent:
         print('****** ' + lib.message.end_block())
