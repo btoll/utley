@@ -14,7 +14,6 @@
 Build all targets (assumes an `utley.json` build file).
 
     utley
-    utley --all
 
 Specify a different build file than the default `utley.json`.
 
@@ -40,26 +39,30 @@ Build whatever you want.
 
     utley --target=clean,css,quizzes.chord_builder,my_custom_target
 
-Clean.
+Clean (assuming it's defined in the `tasks` block).
 
+    utley --task=clean
     utley --clean
 
-Lint.
+Lint (assuming it's defined in the `tasks` block).
 
+    utley --task=lint
     utley --lint
 
-Test.
+Test (assuming it's defined in the `tasks` block).
 
+    utley --task=test
     utley --test
+
+Note that any task defined in the `tasks` block can be aliased by:
+
+    utley --[task]
 
 USAGE:
 
-    --all          Run all build targets.
-    --clean        Run the `clean` build target.
     --config, -c   The location of the build file. Defaults to `utley.json`.
-    --lint         Run the `lint` build target.
     --silent       Does not print log information to STDOUT (will print ERROR messages).
     --target, -t   Specify build targets (comma-separated).
-    --test         Run the `test` build target.
+    --task         Runs the shell command in the `tasks` block.
     --verbose, -v  Print build information.
 

@@ -9,13 +9,6 @@ compressors = {
     'json': 'css'
 }
 
-whitelistTargets = [
-    'clean',
-    'docs',
-    'lint',
-    'test'
-]
-
 def filter_exclusions(root, exclude=[], suffix='js'):
     # Any element in the exclude list is assumed to have an absolute path to the source directory.
     matches = []

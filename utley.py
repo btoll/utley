@@ -9,17 +9,21 @@ import sys
 
 def main(argv):
     configFile = 'utley.json'
-    runAll = False
     silent = False
-    target = None
+    task = None
+    target = ''
     targets = None
     verbose = False
 
     if len(argv) == 0:
-        runAll = True
+        initiateBuild(None, verbose, silent, configFile)
+    elif len(argv) == 1 and '--' in argv[0] and not '=' in argv[0]:
+        # This provides a shortcut for calling shell commands defined in the `tasks` block. For example, the `clean` script
+        # could be called as `utley --clean`. So, anything defined in the `tasks` block can be aliased by prefixing `--`.
+        doTask(argv[0][2:], lib.base.getJson(configFile), silent)
     else:
         try:
-            opts, args = getopt.getopt(argv, 'hc:t:v', ['help', 'all', 'config=', 'clean', 'docs', 'lint', 'silent', 'target=', 'test', 'verbose'])
+            opts, args = getopt.getopt(argv, 'hc:t:v', ['help', 'config=', 'silent', 'target=', 'task=', 'verbose'])
         except getopt.GetoptError:
             print(lib.message.error('Unrecognized flag!'))
             usage()
@@ -29,37 +33,24 @@ def main(argv):
             if opt in ('-h', '--help'):
                 usage()
                 sys.exit(0)
-            elif opt == '--all':
-                runAll = True
             elif opt in ('-c', '--config'):
                 configFile = arg
-            elif opt == '--clean':
-                target = 'clean'
-            elif opt == '--docs':
-                target = 'docs'
-            elif opt == '--lint':
-                target = 'lint'
             elif opt == '--silent':
                 silent = True
             elif opt in ('-t', '--target'):
                 targets = lib.base.make_list(arg)
-            elif opt == '--test':
-                target = 'test'
+            elif opt == '--task':
+                task = arg
             elif opt in ('-v', '--verbose'):
                 verbose = True
 
-    if runAll:
-        for t in lib.base.whitelistTargets:
-            doWhitelistTarget(t, silent)
-
-        initiateBuild(None, verbose, silent, configFile)
-    elif target and target in lib.base.whitelistTargets:
-        doWhitelistTarget(target, silent)
-    elif not target:
-        initiateBuild(targets, verbose, silent, configFile)
-    else:
-        print(lib.message.abort(target))
-        sys.exit(1)
+        if targets:
+            initiateBuild(targets, verbose, silent, configFile)
+        elif task:
+            doTask(task, lib.base.getJson(configFile), silent)
+        else:
+            print(lib.message.abort(target))
+            sys.exit(1)
 
 def initiateBuild(targets=None, verbose=False, silent=False, configFile='utley.json'):
     json = lib.base.getJson(configFile)
@@ -69,7 +60,7 @@ def initiateBuild(targets=None, verbose=False, silent=False, configFile='utley.j
             buildTarget(target, json, verbose, silent)
     else:
         for target in json:
-            if target in lib.base.whitelistTargets:
+            if target == 'tasks':
                 continue
 
             buildTarget(target, json, verbose, silent)
@@ -89,20 +80,21 @@ def buildTarget(target, json, verbose=False, silent=False, indent=''):
             if not silent:
                 print(indent + lib.message.open_block(target))
 
-            if isTargetReference(target):
-                target = target[1:]
-
             ls = json.get(target)
 
-        doTarget(json, target, ls, verbose, silent, indent)
+            if containsTargetReferences(ls):
+                doTargetReference(ls, json, target, verbose, silent, indent)
+            else:
+                doTarget(json, target, ls, verbose, silent, indent)
 
     else:
-        # If a dict then we can't recurse any further, build the whitelisted targets and we're done.
+        # If a dict then we can't recurse any further, compress and we're done.
         for key, value in target.items():
             if key in lib.base.compressors.keys():
                 doCompress(target.get(key), key, lib.base.compressors[key], verbose, silent, indent)
-            elif key in lib.base.whitelistTargets:
-                doWhitelistTarget(key, silent, target.get(key))
+
+def containsTargetReferences(target):
+    return isinstance(target, list) and isinstance(target[0], str)
 
 def doCompress(target, targetName, compressor, verbose=False, silent=False, indent=''):
     if not indent:
@@ -132,50 +124,39 @@ def doTarget(json, target, ls, verbose, silent, indent):
     # If compressing any of the known extensions then send it directly to its same-named compressor.
     if target in lib.base.compressors.keys():
         doCompress(ls, target, lib.base.compressors[target], verbose, silent, indent)
-    elif target in lib.base.whitelistTargets:
-        doWhitelistTarget(target, silent, json.get(target))
     else:
         for subtarget in ls:
-            # For nested targets we want to keep indenting.
-            if isTargetReference(subtarget):
-                subtarget = subtarget[1:]
-
-                # We only operate on dictionaries.
-                if not isinstance(ls, dict):
-                    ls = json
-
             buildTarget(subtarget, ls, verbose, silent,  '****** ')
 
-def doWhitelistTarget(name, silent=False, target=None, json=lib.base.getJson('utley.json')):
-    if not target:
-        target = json.get(name)
+def doTargetReference(ls, json, target, verbose, silent, indent):
+    for ref in ls:
+        if ref[0] == '#':
+            doTask(ref[1:], json, silent)
+        else:
+            doTarget(json, ref, json.get(ref), verbose, silent, indent)
 
-    # Let's not throw or exit early if a whitelisted target doesn't exist.
-    if target:
-        for t in target:
-            t = t.get('run')
+def doTask(key, json, silent=False):
+    tasks = json.get('tasks')
+    task = tasks.get(key)
 
-            if not t and not silent:
-                print(lib.message.warning())
-            else:
-                if not silent:
-                    print(lib.message.open_block(name))
+    if task:
+        if not silent:
+            print('****** ' + lib.message.open_block(key))
 
-                # Instead of handling a non-zero exit code here and throwing, each shell command will have
-                # to clean up after itself.
-                subprocess.call(t, shell=True)
+        # Instead of handling a non-zero exit code here and throwing, each shell command will have
+        # to clean up after itself.
+        subprocess.call(task, shell=True)
 
-    if not silent:
-        print('****** ' + lib.message.end_block())
+        if not silent:
+            print('****** ' + lib.message.end_block())
+    elif not task and not silent:
+        print(lib.message.warning())
 
 def getNestedTarget(keys, ls):
     for key in keys:
         ls = ls.get(key)
 
     return ls
-
-def isTargetReference(target):
-    return isinstance(target, str) and target[0] == '#'
 
 if __name__ == '__main__':
     main(sys.argv[1:])

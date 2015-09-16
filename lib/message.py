@@ -16,5 +16,5 @@ def open_block(name):
     return bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + name + bcolors.ENDC + ' target...'
 
 def warning():
-    return bcolors.YELLOW + '[WARNING]' + bcolors.ENDC + ' Expecting a "run" command but none found.'
+    return bcolors.YELLOW + '[WARNING]' + bcolors.ENDC + ' Expecting a shell command but none found.'
 
