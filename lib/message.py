@@ -1,7 +1,7 @@
 from lib.bcolors import bcolors
 
-def abort(name):
-    return bcolors.RED + '[ERROR]' + bcolors.ENDC + ' No "' + name + '" target has been configured, aborting.'
+def abort(target):
+    return bcolors.RED + '[ERROR]' + bcolors.ENDC + ' No ' + bcolors.PURPLE + target + bcolors.ENDC + ' target found, aborting.'
 
 def building_target(name, compressor):
     return 'Building target ' + bcolors.BROWN + name + bcolors.ENDC + ' with compressor: ' + bcolors.UNDERLINE + compressor + bcolors.ENDC
@@ -18,6 +18,6 @@ def error(msg):
 def open_block(name):
     return bcolors.BROWN + '[INF]' + bcolors.ENDC + '  Making ' + bcolors.BLUE + name + bcolors.ENDC + ' target...'
 
-def warning():
-    return bcolors.YELLOW + '[WARNING]' + bcolors.ENDC + ' Expecting a shell command but none found.'
+def warning(task):
+    return bcolors.YELLOW + '[WARNING]' + bcolors.ENDC + ' Unrecognized task ' + bcolors.PURPLE + task + bcolors.ENDC
 

@@ -13,7 +13,6 @@ def main(argv):
     dumpTarget = None
     silent = False
     task = None
-    target = ''
     targets = None
     verbose = False
 
@@ -57,7 +56,7 @@ def main(argv):
         elif task:
             doTask(task, lib.base.getJson(configFile), silent)
         else:
-            print(lib.message.abort(target))
+            print(lib.message.abort(argv[0]))
             sys.exit(1)
 
 def initiateBuild(targets=None, verbose=False, silent=False, configFile='utley.json'):
@@ -158,7 +157,8 @@ def doTask(key, json, silent=False):
         if not silent:
             print('****** ' + lib.message.end_block())
     elif not task and not silent:
-        print(lib.message.warning())
+        print(lib.message.warning(key))
+        sys.exit(1)
 
 def getNestedTarget(keys, ls):
     for key in keys:
