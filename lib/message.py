@@ -6,6 +6,9 @@ def abort(name):
 def building_target(name, compressor):
     return 'Building target ' + bcolors.BROWN + name + bcolors.ENDC + ' with compressor: ' + bcolors.UNDERLINE + compressor + bcolors.ENDC
 
+def dump_target(target):
+    return 'Printing ' + bcolors.BLUE + target + bcolors.ENDC + ' target:\n'
+
 def end_block():
     return '****** ' + bcolors.GREEN + 'Done' + bcolors.ENDC + '\n'
 

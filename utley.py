@@ -4,11 +4,13 @@ import lib.compressors.css
 import lib.compressors.js
 import lib.message
 import getopt
+import json
 import subprocess
 import sys
 
 def main(argv):
     configFile = 'utley.json'
+    dumpTarget = None
     silent = False
     task = None
     target = ''
@@ -16,6 +18,7 @@ def main(argv):
     verbose = False
 
     if len(argv) == 0:
+        # Assumes `utley.json` config file.
         initiateBuild(None, verbose, silent, configFile)
     elif len(argv) == 1 and '--' in argv[0] and not '=' in argv[0]:
         # This provides a shortcut for calling shell commands defined in the `tasks` block. For example, the `clean` script
@@ -23,7 +26,7 @@ def main(argv):
         doTask(argv[0][2:], lib.base.getJson(configFile), silent)
     else:
         try:
-            opts, args = getopt.getopt(argv, 'hc:t:v', ['help', 'config=', 'silent', 'target=', 'task=', 'verbose'])
+            opts, args = getopt.getopt(argv, 'hc:l:t:v', ['help', 'config=', 'list=', 'silent', 'target=', 'task=', 'verbose'])
         except getopt.GetoptError:
             print(lib.message.error('Unrecognized flag!'))
             usage()
@@ -35,6 +38,8 @@ def main(argv):
                 sys.exit(0)
             elif opt in ('-c', '--config'):
                 configFile = arg
+            elif opt in ('-l', '--list'):
+                dumpTarget = arg
             elif opt == '--silent':
                 silent = True
             elif opt in ('-t', '--target'):
@@ -44,7 +49,10 @@ def main(argv):
             elif opt in ('-v', '--verbose'):
                 verbose = True
 
-        if targets:
+        if dumpTarget:
+            print(lib.message.dump_target(dumpTarget))
+            print(json.dumps(lib.base.getJson(configFile).get(dumpTarget), indent=4) + '\n')
+        elif targets:
             initiateBuild(targets, verbose, silent, configFile)
         elif task:
             doTask(task, lib.base.getJson(configFile), silent)

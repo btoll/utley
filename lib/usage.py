@@ -39,7 +39,11 @@ def usage():
         Note that any task defined in the `tasks` block can be aliased by:
         utley --[task]
 
+        List the `build` target.
+        utley --list=build
+
         --config, -c   The location of the build file. Defaults to `utley.json`.
+        --list, -l     Dump a target to STDOUT.
         --silent       Does not print log information to STDOUT (will print ERROR messages).
         --target, -t   Specify build targets (comma-separated).
         --task         Runs the shell command in the `tasks` block.
