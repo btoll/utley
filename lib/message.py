@@ -3,8 +3,11 @@ from lib.bcolors import bcolors
 def abort(target):
     return bcolors.RED + '[ERROR]' + bcolors.ENDC + ' No ' + bcolors.PURPLE + target + bcolors.ENDC + ' target found, aborting.'
 
-def building_target(name, compressor):
-    return 'Building target ' + bcolors.BROWN + name + bcolors.ENDC + ' with compressor: ' + bcolors.UNDERLINE + compressor + bcolors.ENDC
+def compressing(name, compressor):
+    return 'Compressing target ' + bcolors.BROWN + name + bcolors.ENDC + ' with compressor: ' + bcolors.UNDERLINE + compressor + bcolors.ENDC
+
+def concatting(name, compressor):
+    return 'Concatenating target ' + bcolors.BROWN + name + bcolors.ENDC
 
 def dump_target(target):
     return 'Printing ' + bcolors.BLUE + target + bcolors.ENDC + ' target:\n'

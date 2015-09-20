@@ -92,7 +92,6 @@ def write_buffer(buff, output):
     if dest != '.':
         os.makedirs(dest, exist_ok=True)
 
-    # Let's append in case a build prepending copyright information (or anything, really) before calling here.
     with open(dest + '/' + output, mode='w', encoding='utf-8') as fp:
         # Flush the buffer (only perform I/O once).
         fp.write(''.join(buff))

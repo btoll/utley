@@ -1,7 +1,10 @@
+# TODO: bake semver into build artifacts.
+
 import lib.base
 from lib.usage import usage
 import lib.compressors.css
 import lib.compressors.js
+import fileinput
 import lib.message
 import getopt
 import json
@@ -98,39 +101,83 @@ def buildTarget(target, json, verbose=False, silent=False, indent=''):
         # If a dict then we can't recurse any further, compress and we're done.
         for key, value in target.items():
             if key in lib.base.compressors.keys():
-                doCompress(target.get(key), key, lib.base.compressors[key], verbose, silent, indent)
+                #doCompress(target.get(key), key, lib.base.compressors[key], verbose, silent, indent)
+                doConcat(target.get(key), key, verbose, silent, indent)
 
 def containsTargetReferences(target):
     return isinstance(target, list) and isinstance(target[0], str)
 
-def doCompress(target, targetName, compressor, verbose=False, silent=False, indent=''):
+def doCompress(src, compressor, version, verbose=False, silent=False, indent=''):
     if not indent:
         indent = '****** '
 
     if not silent:
-        print(indent + lib.message.building_target(targetName, compressor))
+        print(indent + lib.message.compressing(compressor, compressor))
+
+    if compressor == 'css' or compressor == 'json':
+        buff = lib.compressors.css.compress(src, version, verbose, silent)
+    elif compressor == 'js':
+        buff = lib.compressors.js.compress(src, version, verbose, silent)
+
+#    if not silent:
+#        print(indent + lib.message.end_block())
+
+    return buff
+
+def doConcat(target, targetName, verbose=False, silent=False, indent=''):
+    if not indent:
+        indent = '****** '
+
+    if not silent:
+        print(indent + lib.message.concatting(targetName, targetName))
+
+    buff = []
 
     for t in target:
         src = t.get('src')
         output = t.get('output')
-        dest = t.get('dest', '.')
         version = t.get('version', '')
         dependencies = t.get('dependencies', [])
         exclude = t.get('exclude', [])
         name = t.get('name', '')
 
-        if compressor == 'css' or compressor == 'json':
-            lib.compressors.css.compress(src, output, dest, version, dependencies, exclude, name, verbose, silent)
-        elif compressor == 'js':
-            lib.compressors.js.compress(src, output, dest, version, dependencies, exclude, name, verbose, silent)
+    ls = lib.base.sift_list(
+        lib.base.make_list(src),
+        targetName,
+        lib.base.make_list(exclude),
+        lib.base.make_list(dependencies)
+    )
+
+    with fileinput.input(ls) as f:
+        for line in f:
+            buff.append(line)
+
+    lib.base.write_buffer(buff, output)
+    buff = doCompress(output, targetName, version, verbose=False, silent=False)
+
+    lib.base.write_buffer(buff, output)
 
     if not silent:
         print(indent + lib.message.end_block())
 
+#    for script in ls:
+#        # If script is a named target then retrieve it from the global `builds` dict.
+#        # Note that it assumes the named target was already built!
+#        if script[0] == '@':
+#            buff.append(''.join(builds.get(script[1:])))
+#        else:
+#        if name:
+#            builds.update({
+#                name: buff
+#            })
+        #buff.append(subprocess.getoutput('babel ' + script + ' | java -jar ' + jar + ' --type js'))
+
+
 def doTarget(json, target, ls, verbose, silent, indent):
     # If compressing any of the known extensions then send it directly to its same-named compressor.
     if target in lib.base.compressors.keys():
-        doCompress(ls, target, lib.base.compressors[target], verbose, silent, indent)
+        #doCompress(ls, target, lib.base.compressors[target], verbose, silent, indent)
+        doConcat(ls, target, verbose, silent, indent)
     else:
         for subtarget in ls:
             buildTarget(subtarget, ls, verbose, silent,  '****** ')

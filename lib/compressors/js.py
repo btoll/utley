@@ -6,11 +6,7 @@ import os
 import subprocess
 import sys
 
-builds = {}
-
-def compress(src, output='min.js', dest='.', version='', dependencies=[], exclude=[], name='', verbose=False, silent=False, jar=None):
-    global builds
-
+def compress(src, version='', verbose=False, silent=False, jar=None):
     if not src:
         print('Error: You must provide the location of the source files.')
         sys.exit(1)
@@ -26,38 +22,21 @@ def compress(src, output='min.js', dest='.', version='', dependencies=[], exclud
 
     try:
         buff = []
-        ls = lib.base.sift_list(
-            lib.base.make_list(src),
-            'js',
-            lib.base.make_list(exclude),
-            lib.base.make_list(dependencies)
-        )
 
         if not silent and not verbose:
             spinner = itertools.cycle(['-', '\\', '|', '/'])
 
-        for script in ls:
-            # If script is a named target then retrieve it from the global `builds` dict.
-            # Note that it assumes the named target was already built!
-            if script[0] == '@':
-                buff.append(''.join(builds.get(script[1:])))
-            else:
-                if not silent and not verbose:
-                    sys.stdout.write(next(spinner))
-                    sys.stdout.write('\b')
-                    sys.stdout.flush()
-                    sys.stdout.write('\b')
-                elif verbose:
-                    print(bcolors.ON_BLUE + bcolors.BROWN + '[DEBUG]' + bcolors.ON_WHITE + bcolors.YELLOW + ' Processing -> ' + bcolors.ENDC + script)
+        if not silent and not verbose:
+            sys.stdout.write(next(spinner))
+            sys.stdout.write('\b')
+            sys.stdout.flush()
+            sys.stdout.write('\b')
+        elif verbose:
+            print(bcolors.ON_BLUE + bcolors.BROWN + '[DEBUG]' + bcolors.ON_WHITE + bcolors.YELLOW + ' Processing -> ' + bcolors.ENDC + script)
 
-                buff.append(subprocess.getoutput('babel ' + script + ' | java -jar ' + jar + ' --type js'))
+        buff.append(subprocess.getoutput('java -jar ' + jar + ' ' + src))
 
-        if name:
-            builds.update({
-                name: buff
-            })
-
-        lib.base.write_buffer(buff, output)
+        return buff
 
     except (KeyboardInterrupt, EOFError):
         # Control-C or Control-D sent a SIGINT to the process, handle it.
