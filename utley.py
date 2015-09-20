@@ -26,9 +26,12 @@ def main(argv):
         # This provides a shortcut for calling shell commands defined in the `tasks` block. For example, the `clean` script
         # could be called as `utley --clean`. So, anything defined in the `tasks` block can be aliased by prefixing `--`.
         doTask(argv[0][2:], lib.base.getJson(configFile), silent)
+    elif len(argv) == 1:
+        # This provides a shortcut for calling target. For example, the `build` target could be called as `utley build`.
+        initiateBuild(lib.base.make_list(argv[0]), verbose, silent, configFile)
     else:
         try:
-            opts, args = getopt.getopt(argv, 'hc:l:t:v', ['help', 'config=', 'list=', 'silent', 'target=', 'task=', 'verbose'])
+            opts, args = getopt.getopt(argv, 'hc:l:v', ['help', 'config=', 'list=', 'silent', 'target=', 'task=', 'verbose'])
         except getopt.GetoptError:
             print(lib.message.error('Unrecognized flag!'))
             usage()
@@ -44,7 +47,7 @@ def main(argv):
                 dumpTarget = arg
             elif opt == '--silent':
                 silent = True
-            elif opt in ('-t', '--target'):
+            elif opt == '--target':
                 targets = lib.base.make_list(arg)
             elif opt == '--task':
                 task = arg
@@ -152,7 +155,9 @@ def doConcat(target, targetName, verbose=False, silent=False, indent=''):
         for line in f:
             buff.append(line)
 
+    #buff = doTranspile(buff, targetName, version, verbose=False, silent=False)
     lib.base.write_buffer(buff, output)
+
     buff = doCompress(output, targetName, version, verbose=False, silent=False)
 
     lib.base.write_buffer(buff, output)

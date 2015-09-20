@@ -22,22 +22,30 @@ Specify a different build file than the default `utley.json`.
 Build only the CSS target.
 
     utley --target=css
+    utley css
 
 Build only the JavaScript target.
 
     utley --target=js
+    utley js
 
 Build multiple targets.
 
     utley --target=js,css,quizzes
+    utley js,css,quizzes
 
 Build a nested subtarget.
 
     utley --target=foo.bar.quux
+    utley foo.bar.quux
 
 Build whatever you want.
 
     utley --target=clean,css,quizzes.chord_builder,my_custom_target
+    utley clean,css,quizzes.chord_builder,my_custom_target
+
+Note that any target(s) can use the shortcut:
+utley [target(s)]
 
 Clean (assuming it's defined in the `tasks` block).
 
@@ -67,7 +75,7 @@ USAGE:
     --config, -c   The location of the build file. Defaults to `utley.json`.
     --list, -l     Dump a target to STDOUT.
     --silent       Does not print log information to STDOUT (will print ERROR messages).
-    --target, -t   Specify build targets (comma-separated).
+    --target       Specify build targets (comma-separated).
     --task         Runs the shell command in the `tasks` block.
     --verbose, -v  Print build information.
 

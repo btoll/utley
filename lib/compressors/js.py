@@ -21,8 +21,6 @@ def compress(src, version='', verbose=False, silent=False, jar=None):
                 sys.exit(1)
 
     try:
-        buff = []
-
         if not silent and not verbose:
             spinner = itertools.cycle(['-', '\\', '|', '/'])
 
@@ -34,9 +32,8 @@ def compress(src, version='', verbose=False, silent=False, jar=None):
         elif verbose:
             print(bcolors.ON_BLUE + bcolors.BROWN + '[DEBUG]' + bcolors.ON_WHITE + bcolors.YELLOW + ' Processing -> ' + bcolors.ENDC + script)
 
-        buff.append(subprocess.getoutput('java -jar ' + jar + ' ' + src))
-
-        return buff
+        return subprocess.getoutput('uglifyjs ' + src)
+        #return subprocess.getoutput('java -jar ' + jar + ' ' + src)
 
     except (KeyboardInterrupt, EOFError):
         # Control-C or Control-D sent a SIGINT to the process, handle it.
