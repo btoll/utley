@@ -40,7 +40,7 @@ def main(argv):
         # This provides a shortcut for calling shell commands defined in the `tasks` block. For example, the `clean` script
         # could be called as `utley --clean`. So, anything defined in the `tasks` block can be aliased by prefixing `--`.
         doTask(argv[0][2:], lib.base.getJson(configFile), silent)
-    elif len(argv) == 1:
+    elif len(argv) == 1 and not '=' in argv[0]:
         # This provides a shortcut for calling target. For example, the `build` target could be called as `utley build`.
         initiateBuild(lib.base.make_list(argv[0]), verbose, silent, configFile)
     else:
