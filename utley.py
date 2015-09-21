@@ -104,22 +104,21 @@ def buildTarget(target, json, verbose=False, silent=False, indent=''):
         # If a dict then we can't recurse any further, compress and we're done.
         for key, value in target.items():
             if key in lib.base.compressors.keys():
-                #doCompress(target.get(key), key, lib.base.compressors[key], verbose, silent, indent)
                 doConcat(target.get(key), key, verbose, silent, indent)
 
 def containsTargetReferences(target):
     return isinstance(target, list) and isinstance(target[0], str)
 
-def doCompress(src, compressor, version, verbose=False, silent=False, indent=''):
+def doCompress(compressor, targetName, src, version, verbose=False, silent=False, indent=''):
     if not indent:
         indent = '****** '
 
     if not silent:
-        print(indent + lib.message.compressing(compressor, compressor))
+        print(indent + lib.message.compressing(targetName, compressor))
 
-    if compressor == 'css' or compressor == 'json':
+    if targetName == 'css' or targetName == 'json':
         buff = lib.compressors.css.compress(src, version, verbose, silent)
-    elif compressor == 'js':
+    elif targetName == 'js':
         buff = lib.compressors.js.compress(src, version, verbose, silent)
 
 #    if not silent:
@@ -128,11 +127,16 @@ def doCompress(src, compressor, version, verbose=False, silent=False, indent='')
     return buff
 
 def doConcat(target, targetName, verbose=False, silent=False, indent=''):
+    rc = lib.base.getJson('.utleyrc')
+    lang = None
+    compress = None
+    transpile = None
+
     if not indent:
         indent = '****** '
 
     if not silent:
-        print(indent + lib.message.concatting(targetName, targetName))
+        print(indent + lib.message.concatting(targetName))
 
     buff = []
 
@@ -151,14 +155,24 @@ def doConcat(target, targetName, verbose=False, silent=False, indent=''):
         lib.base.make_list(dependencies)
     )
 
+    if rc:
+        lang = rc.get(targetName)
+
+        if lang:
+            compress = lang.get('compress')
+            transpile = lang.get('transpile')
+
     with fileinput.input(ls) as f:
         for line in f:
             buff.append(line)
 
-    #buff = doTranspile(buff, targetName, version, verbose=False, silent=False)
     lib.base.write_buffer(buff, output)
 
-    buff = doCompress(output, targetName, version, verbose=False, silent=False)
+    if transpile:
+        buff = doTranspile(transpile, targetName, output, verbose=False, silent=False)
+
+    if compress:
+        buff = doCompress(compress, targetName, output, version, verbose=False, silent=False)
 
     lib.base.write_buffer(buff, output)
 
@@ -179,9 +193,8 @@ def doConcat(target, targetName, verbose=False, silent=False, indent=''):
 
 
 def doTarget(json, target, ls, verbose, silent, indent):
-    # If compressing any of the known extensions then send it directly to its same-named compressor.
+    # If operating on one of the known extensions then pass it directly on.
     if target in lib.base.compressors.keys():
-        #doCompress(ls, target, lib.base.compressors[target], verbose, silent, indent)
         doConcat(ls, target, verbose, silent, indent)
     else:
         for subtarget in ls:
@@ -212,6 +225,19 @@ def doTask(key, json, silent=False):
         print(lib.message.warning(key))
         sys.exit(1)
 
+def doTranspile(transpiler, target, src, verbose=False, silent=False, indent=''):
+    if not indent:
+        indent = '****** '
+
+    if not silent:
+        print(indent + lib.message.transpiling(target, transpiler))
+
+    return subprocess.getoutput(transpiler + ' ' + src)
+
+#    if not silent:
+#        print(indent + lib.message.end_block())
+
+    return buff
 def getNestedTarget(keys, ls):
     for key in keys:
         ls = ls.get(key)
