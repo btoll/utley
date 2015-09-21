@@ -17,12 +17,13 @@
 import lib.base
 from lib.usage import usage
 import lib.compressors.css
-import fileinput
 import lib.message
 import getopt
 import json
 import subprocess
 import sys
+
+builds = {}
 
 def main(argv):
     configFile = 'utley.json'
@@ -140,63 +141,73 @@ def doCompress(compressor, targetName, src, verbose=False, silent=False, indent=
     return buff
 
 def doConcat(target, targetName, verbose=False, silent=False, indent=''):
+    global builds
+
+    preprocessed = None
+
     if not indent:
         indent = '****** '
 
     if not silent:
         print(indent + lib.message.concatting(targetName))
 
-    buff = []
-
     for t in target:
+        buff = []
+
         src = t.get('src')
         output = t.get('output')
         dependencies = t.get('dependencies', [])
         exclude = t.get('exclude', [])
         name = t.get('name', '')
 
-    ls = lib.base.sift_list(
-        lib.base.make_list(src),
-        targetName,
-        lib.base.make_list(exclude),
-        lib.base.make_list(dependencies)
-    )
+        ls = lib.base.sift_list(
+            lib.base.make_list(src),
+            targetName,
+            lib.base.make_list(exclude),
+            lib.base.make_list(dependencies)
+        )
 
-    with fileinput.input(ls) as f:
-        for line in f:
-            buff.append(line)
+        for script in ls:
+            # If script is a named target then retrieve it from the global `builds` dict.
+            # Note that it assumes the named target was already built!
+            if script[0] == '@':
+                buff.append(''.join(builds.get(script[1:])))
+            else:
+                script = open(script, 'r')
 
-    lib.base.write_buffer(buff, output)
+                for line in script:
+                    buff.append(line)
 
-    doPreprocessing(targetName, output, verbose=False, silent=False, indent='')
+                script.close()
+
+        lib.base.write_buffer(buff, output)
+
+        # If a named target then skip here, it probably was preprocessed the first time when it was built.
+        preprocessed = doPreprocessing(targetName, output, verbose=False, silent=False, indent='')
+
+        if preprocessed:
+            lib.base.write_buffer(preprocessed, output)
+            buff = preprocessed
+
+        if name:
+            builds.update({
+                name: buff
+            })
 
     if not silent:
         print(indent + lib.message.end_block())
-
-#    for script in ls:
-#        # If script is a named target then retrieve it from the global `builds` dict.
-#        # Note that it assumes the named target was already built!
-#        if script[0] == '@':
-#            buff.append(''.join(builds.get(script[1:])))
-#        else:
-#        if name:
-#            builds.update({
-#                name: buff
-#            })
-#
-#        buff.append(subprocess.getoutput('babel ' + script + ' | java -jar ' + jar + ' --type js'))
 
 def doPreprocessing(targetName, output, verbose=False, silent=False, indent=''):
     manifest = lib.base.getManifest()
 
     if manifest:
         rc = lib.base.getJson(manifest)
-        lang = None
-        transpile = None
-        compress = None
 
         if rc:
-            buff = []
+            lang = None
+            transpile = None
+            compress = None
+            buff = None
             lang = rc.get(targetName)
 
             if lang:
@@ -209,7 +220,9 @@ def doPreprocessing(targetName, output, verbose=False, silent=False, indent=''):
             if compress:
                 buff = doCompress(compress, targetName, output, verbose=False, silent=False)
 
-            lib.base.write_buffer(buff, output)
+            return buff
+
+    return None
 
 def doTarget(json, target, ls, verbose, silent, indent):
     # If operating on one of the known extensions then pass it directly on.
