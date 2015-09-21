@@ -1,9 +1,22 @@
 # TODO: bake semver into build artifacts.
+#
+# TODO: spinner!
+#        if not silent and not verbose:
+#            spinner = itertools.cycle(['-', '\\', '|', '/'])
+#
+#        if not silent and not verbose:
+#            sys.stdout.write(next(spinner))
+#            sys.stdout.write('\b')
+#            sys.stdout.flush()
+#            sys.stdout.write('\b')
+#        elif verbose:
+#            print(bcolors.ON_BLUE + bcolors.BROWN + '[DEBUG]' + bcolors.ON_WHITE + bcolors.YELLOW + ' Processing -> ' + bcolors.ENDC + script)
+#
+#        return subprocess.getoutput(compressor + ' ' + src)
 
 import lib.base
 from lib.usage import usage
 import lib.compressors.css
-import lib.compressors.js
 import fileinput
 import lib.message
 import getopt
@@ -119,7 +132,7 @@ def doCompress(compressor, targetName, src, verbose=False, silent=False, indent=
     if targetName == 'css' or targetName == 'json':
         buff = lib.compressors.css.compress(src, verbose, silent)
     elif targetName == 'js':
-        buff = lib.compressors.js.compress(compressor, src, verbose, silent)
+        buff = subprocess.getoutput(compressor + ' ' + src)
 
 #    if not silent:
 #        print(indent + lib.message.end_block())
