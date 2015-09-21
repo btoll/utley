@@ -3,7 +3,7 @@ from lib.bcolors import bcolors
 import re
 import sys
 
-def compress(src, version='', verbose=False, silent=False, jar=None):
+def compress(src, verbose=False, silent=False, jar=None):
     if not src:
         print('Error: You must provide the location of the source files.')
         sys.exit(1)

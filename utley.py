@@ -109,7 +109,7 @@ def buildTarget(target, json, verbose=False, silent=False, indent=''):
 def containsTargetReferences(target):
     return isinstance(target, list) and isinstance(target[0], str)
 
-def doCompress(compressor, targetName, src, version, verbose=False, silent=False, indent=''):
+def doCompress(compressor, targetName, src, verbose=False, silent=False, indent=''):
     if not indent:
         indent = '****** '
 
@@ -117,9 +117,9 @@ def doCompress(compressor, targetName, src, version, verbose=False, silent=False
         print(indent + lib.message.compressing(targetName, compressor))
 
     if targetName == 'css' or targetName == 'json':
-        buff = lib.compressors.css.compress(src, version, verbose, silent)
+        buff = lib.compressors.css.compress(src, verbose, silent)
     elif targetName == 'js':
-        buff = lib.compressors.js.compress(src, version, verbose, silent)
+        buff = lib.compressors.js.compress(compressor, src, verbose, silent)
 
 #    if not silent:
 #        print(indent + lib.message.end_block())
@@ -127,11 +127,6 @@ def doCompress(compressor, targetName, src, version, verbose=False, silent=False
     return buff
 
 def doConcat(target, targetName, verbose=False, silent=False, indent=''):
-    rc = lib.base.getJson('.utleyrc')
-    lang = None
-    compress = None
-    transpile = None
-
     if not indent:
         indent = '****** '
 
@@ -143,7 +138,6 @@ def doConcat(target, targetName, verbose=False, silent=False, indent=''):
     for t in target:
         src = t.get('src')
         output = t.get('output')
-        version = t.get('version', '')
         dependencies = t.get('dependencies', [])
         exclude = t.get('exclude', [])
         name = t.get('name', '')
@@ -155,26 +149,13 @@ def doConcat(target, targetName, verbose=False, silent=False, indent=''):
         lib.base.make_list(dependencies)
     )
 
-    if rc:
-        lang = rc.get(targetName)
-
-        if lang:
-            compress = lang.get('compress')
-            transpile = lang.get('transpile')
-
     with fileinput.input(ls) as f:
         for line in f:
             buff.append(line)
 
     lib.base.write_buffer(buff, output)
 
-    if transpile:
-        buff = doTranspile(transpile, targetName, output, verbose=False, silent=False)
-
-    if compress:
-        buff = doCompress(compress, targetName, output, version, verbose=False, silent=False)
-
-    lib.base.write_buffer(buff, output)
+    doPreprocessing(targetName, output, verbose=False, silent=False, indent='')
 
     if not silent:
         print(indent + lib.message.end_block())
@@ -189,8 +170,33 @@ def doConcat(target, targetName, verbose=False, silent=False, indent=''):
 #            builds.update({
 #                name: buff
 #            })
-        #buff.append(subprocess.getoutput('babel ' + script + ' | java -jar ' + jar + ' --type js'))
+#
+#        buff.append(subprocess.getoutput('babel ' + script + ' | java -jar ' + jar + ' --type js'))
 
+def doPreprocessing(targetName, output, verbose=False, silent=False, indent=''):
+    manifest = lib.base.getManifest()
+
+    if manifest:
+        rc = lib.base.getJson(manifest)
+        lang = None
+        transpile = None
+        compress = None
+
+        if rc:
+            buff = []
+            lang = rc.get(targetName)
+
+            if lang:
+                transpile = lang.get('transpile')
+                compress = lang.get('compress')
+
+            if transpile:
+                buff = doTranspile(transpile, targetName, output, verbose=False, silent=False)
+
+            if compress:
+                buff = doCompress(compress, targetName, output, verbose=False, silent=False)
+
+            lib.base.write_buffer(buff, output)
 
 def doTarget(json, target, ls, verbose, silent, indent):
     # If operating on one of the known extensions then pass it directly on.
@@ -238,6 +244,7 @@ def doTranspile(transpiler, target, src, verbose=False, silent=False, indent='')
 #        print(indent + lib.message.end_block())
 
     return buff
+
 def getNestedTarget(keys, ls):
     for key in keys:
         ls = ls.get(key)

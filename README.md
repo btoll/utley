@@ -45,7 +45,8 @@ Build whatever you want.
     utley clean,css,quizzes.chord_builder,my_custom_target
 
 Note that any target(s) can use the shortcut:
-utley [target(s)]
+
+    utley [target(,s)]
 
 Clean (assuming it's defined in the `tasks` block).
 

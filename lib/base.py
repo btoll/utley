@@ -44,6 +44,17 @@ def getJson(resource='utley.json'):
         print(e)
         sys.exit(1)
 
+def getManifest():
+    local = '.utleyrc'
+    globl = os.path.expanduser('~') + '/' + local
+
+    if os.path.isfile(local):
+        return local
+    elif os.path.isfile(globl):
+        return globl
+    else:
+        return None
+
 def make_abspath(root, ls):
     return [os.path.join(root, f) for f in ls]
 
