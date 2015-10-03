@@ -78,32 +78,32 @@ def initiateBuild(targets=None, verbose=False, silent=False, configFile='utley.j
             buildTarget(target, json, verbose, silent)
 
 def buildTarget(target, json, verbose=False, silent=False):
-    ls = []
-
     if not isinstance(target, dict):
         # Check to see if target is a subtarget (i.e., 'quizzes.chord_buider'). It will only be dot-separated
         # if explicitly passed as a build target.
-        if '.' in target:
-            if not silent:
-                print('Building ' + target + ' target...')
+        ls = checkNestedTarget(target, json)
 
-            ls = getNestedTarget(target.split('.'), json)
+        if not silent:
+            print('Initiating ' + target + ' target...')
+
+        if containsTargetReferences(ls):
+            doTargetReference(ls, json, target, verbose, silent)
         else:
-            if not silent:
-                print('Initiating ' + target + ' target...')
-
-            ls = json.get(target)
-
-            if containsTargetReferences(ls):
-                doTargetReference(ls, json, target, verbose, silent)
-            else:
-                doTarget(json, target, ls, verbose, silent)
+            doTarget(json, target, ls, verbose, silent)
 
     else:
         # If a dict then we can't recurse any further, compress and we're done.
         for key, value in target.items():
             if key in lib.base.compressors.keys():
                 doConcat(target.get(key), key, verbose, silent)
+
+def checkNestedTarget(target, json):
+    if '.' in target:
+        ls = getNestedTarget(target.split('.'), json)
+    else:
+        ls = json.get(target)
+
+    return ls
 
 def containsTargetReferences(target):
     return isinstance(target, list) and isinstance(target[0], str)
@@ -223,7 +223,8 @@ def doTargetReference(ls, json, target, verbose, silent):
         if ref[0] == '#':
             doTask(ref[1:], json, silent)
         else:
-            doTarget(json, ref, json.get(ref), verbose, silent)
+            ls = checkNestedTarget(ref, json)
+            doTarget(json, ref, ls, verbose, silent)
 
 def doTask(key, json, silent=False):
     tasks = json.get('tasks')
