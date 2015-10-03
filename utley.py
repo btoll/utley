@@ -1,4 +1,5 @@
-# TODO: bake semver into build artifacts.
+# TODO: Bake semver into build artifacts.
+# TODO: Make more verbose.
 
 import lib.base
 from lib.usage import usage
@@ -25,20 +26,27 @@ def main(argv):
     elif len(argv) == 1 and '--' in argv[0] and not '=' in argv[0]:
         # This provides a shortcut for calling shell commands defined in the `tasks` block. For example, the `clean` script
         # could be called as `utley --clean`. So, anything defined in the `tasks` block can be aliased by prefixing `--`.
-        doTask(argv[0][2:], lib.base.getJson(configFile), silent)
-    elif len(argv) == 1 and not '=' in argv[0]:
+        opt = argv[0][2:]
+
+        if opt == 'help':
+            usage()
+            sys.exit(0)
+
+        doTask(opt, lib.base.getJson(configFile), verbose, silent)
+
+    elif len(argv) == 1 and not '=' in argv[0] and not '-' in argv[0]:
         # This provides a shortcut for calling target. For example, the `build` target could be called as `utley build`.
         initiateBuild(lib.base.make_list(argv[0]), verbose, silent, configFile)
     else:
         try:
-            opts, args = getopt.getopt(argv, 'hc:l:v', ['help', 'config=', 'list=', 'silent', 'target=', 'task=', 'verbose'])
+            opts, args = getopt.getopt(argv, 'hc:l:v', ['config=', 'list=', 'silent', 'target=', 'task=', 'verbose'])
         except getopt.GetoptError:
             print('[ERROR] Unrecognized flag!')
             usage()
             sys.exit(1)
 
         for opt, arg in opts:
-            if opt in ('-h', '--help'):
+            if opt == '-h':
                 usage()
                 sys.exit(0)
             elif opt in ('-c', '--config'):
@@ -59,7 +67,7 @@ def main(argv):
         elif targets:
             initiateBuild(targets, verbose, silent, configFile)
         elif task:
-            doTask(task, lib.base.getJson(configFile), silent)
+            doTask(task, lib.base.getJson(configFile), verbose, silent)
         else:
             print('[ERROR] No ' + target + ' target found, aborting.')
             sys.exit(1)
@@ -172,7 +180,7 @@ def doConcat(target, targetName, verbose=False, silent=False):
             print('Completed')
 
         # If a named target then skip here, it probably was preprocessed the first time when it was built.
-        preprocessed = doPreprocessing(targetName, output, verbose=False, silent=False)
+        preprocessed = doPreprocessing(targetName, output, verbose, silent)
 
         if preprocessed:
             lib.base.write_buffer(preprocessed, output)
@@ -201,10 +209,10 @@ def doPreprocessing(targetName, output, verbose=False, silent=False):
                 compress = lang.get('compress')
 
             if transpile:
-                buff = doTranspile(transpile, targetName, output, verbose=False, silent=False)
+                buff = doTranspile(transpile, targetName, output, verbose, silent)
 
             if compress:
-                buff = doCompress(compress, targetName, output, verbose=False, silent=False)
+                buff = doCompress(compress, targetName, output, verbose, silent)
 
             return buff
 
@@ -221,20 +229,21 @@ def doTarget(json, target, ls, verbose, silent):
 def doTargetReference(ls, json, target, verbose, silent):
     for ref in ls:
         if ref[0] == '#':
-            doTask(ref[1:], json, silent)
+            doTask(ref[1:], json, verbose, silent)
         else:
             ls = checkNestedTarget(ref, json)
             doTarget(json, ref, ls, verbose, silent)
 
-def doTask(key, json, silent=False):
+def doTask(key, json, verbose=False, silent=False):
     tasks = json.get('tasks')
     task = tasks.get(key)
 
     if task:
+        if verbose:
+            print('[DEBUG] Processing -> ' + task)
+
         if not silent:
             spinner('[INF] Making ' + key + ' target... ')
-        elif verbose:
-            print('[DEBUG] Processing -> ' + script)
 
         # Instead of handling a non-zero exit code here and throwing, each shell command will have
         # to clean up after itself.
