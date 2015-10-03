@@ -1,25 +1,11 @@
 # TODO: bake semver into build artifacts.
-#
-# TODO: spinner!
-#        if not silent and not verbose:
-#            spinner = itertools.cycle(['-', '\\', '|', '/'])
-#
-#        if not silent and not verbose:
-#            sys.stdout.write(next(spinner))
-#            sys.stdout.write('\b')
-#            sys.stdout.flush()
-#            sys.stdout.write('\b')
-#        elif verbose:
-#            print(bcolors.ON_BLUE + bcolors.BROWN + '[DEBUG]' + bcolors.ON_WHITE + bcolors.YELLOW + ' Processing -> ' + bcolors.ENDC + script)
-#
-#        return subprocess.getoutput(compressor + ' ' + src)
 
 import lib.base
 from lib.usage import usage
 import lib.compressors.css
-import lib.message
 import getopt
 import json
+import itertools
 import subprocess
 import sys
 
@@ -47,7 +33,7 @@ def main(argv):
         try:
             opts, args = getopt.getopt(argv, 'hc:l:v', ['help', 'config=', 'list=', 'silent', 'target=', 'task=', 'verbose'])
         except getopt.GetoptError:
-            print(lib.message.error('Unrecognized flag!'))
+            print('[ERROR] Unrecognized flag!')
             usage()
             sys.exit(1)
 
@@ -69,14 +55,13 @@ def main(argv):
                 verbose = True
 
         if dumpTarget:
-            print(lib.message.dump_target(dumpTarget))
             print(json.dumps(lib.base.getJson(configFile).get(dumpTarget), indent=4) + '\n')
         elif targets:
             initiateBuild(targets, verbose, silent, configFile)
         elif task:
             doTask(task, lib.base.getJson(configFile), silent)
         else:
-            print(lib.message.abort(argv[0]))
+            print('[ERROR] No ' + target + ' target found, aborting.')
             sys.exit(1)
 
 def initiateBuild(targets=None, verbose=False, silent=False, configFile='utley.json'):
@@ -92,7 +77,7 @@ def initiateBuild(targets=None, verbose=False, silent=False, configFile='utley.j
 
             buildTarget(target, json, verbose, silent)
 
-def buildTarget(target, json, verbose=False, silent=False, indent=''):
+def buildTarget(target, json, verbose=False, silent=False):
     ls = []
 
     if not isinstance(target, dict):
@@ -100,58 +85,59 @@ def buildTarget(target, json, verbose=False, silent=False, indent=''):
         # if explicitly passed as a build target.
         if '.' in target:
             if not silent:
-                print(lib.message.open_block(target))
+                print('Building ' + target + ' target...')
 
             ls = getNestedTarget(target.split('.'), json)
         else:
             if not silent:
-                print(indent + lib.message.open_block(target))
+                print('Initiating ' + target + ' target...')
 
             ls = json.get(target)
 
             if containsTargetReferences(ls):
-                doTargetReference(ls, json, target, verbose, silent, indent)
+                doTargetReference(ls, json, target, verbose, silent)
             else:
-                doTarget(json, target, ls, verbose, silent, indent)
+                doTarget(json, target, ls, verbose, silent)
 
     else:
         # If a dict then we can't recurse any further, compress and we're done.
         for key, value in target.items():
             if key in lib.base.compressors.keys():
-                doConcat(target.get(key), key, verbose, silent, indent)
+                doConcat(target.get(key), key, verbose, silent)
 
 def containsTargetReferences(target):
     return isinstance(target, list) and isinstance(target[0], str)
 
-def doCompress(compressor, targetName, src, verbose=False, silent=False, indent=''):
-    if not indent:
-        indent = '****** '
-
+def doCompress(compressor, targetName, src, verbose=False, silent=False):
     if not silent:
-        print(indent + lib.message.compressing(targetName, compressor))
+        message = '[INF] Compressing target ' + targetName
+
+        # Note that the CSS is compressed using regexes so there is no compressor to name.
+        if not isinstance(compressor, bool):
+            message += ' with compressor ' + compressor
+
+        message += '... '
+        spinner(message)
 
     if targetName == 'css' or targetName == 'json':
         buff = lib.compressors.css.compress(src, verbose, silent)
     elif targetName == 'js':
         buff = subprocess.getoutput(compressor + ' ' + src)
 
-#    if not silent:
-#        print(indent + lib.message.end_block())
+    if not silent:
+        print('Completed')
 
     return buff
 
-def doConcat(target, targetName, verbose=False, silent=False, indent=''):
+def doConcat(target, targetName, verbose=False, silent=False):
     global builds
 
     preprocessed = None
 
-    if not indent:
-        indent = '****** '
-
-    if not silent:
-        print(indent + lib.message.concatting(targetName))
-
     for t in target:
+        if not silent:
+            spinner('[INF] Concatenating target ' + targetName + '... ')
+
         buff = []
 
         src = t.get('src')
@@ -182,8 +168,11 @@ def doConcat(target, targetName, verbose=False, silent=False, indent=''):
 
         lib.base.write_buffer(buff, output)
 
+        if not silent:
+            print('Completed')
+
         # If a named target then skip here, it probably was preprocessed the first time when it was built.
-        preprocessed = doPreprocessing(targetName, output, verbose=False, silent=False, indent='')
+        preprocessed = doPreprocessing(targetName, output, verbose=False, silent=False)
 
         if preprocessed:
             lib.base.write_buffer(preprocessed, output)
@@ -194,10 +183,7 @@ def doConcat(target, targetName, verbose=False, silent=False, indent=''):
                 name: buff
             })
 
-    if not silent:
-        print(indent + lib.message.end_block())
-
-def doPreprocessing(targetName, output, verbose=False, silent=False, indent=''):
+def doPreprocessing(targetName, output, verbose=False, silent=False):
     manifest = lib.base.getManifest()
 
     if manifest:
@@ -224,20 +210,20 @@ def doPreprocessing(targetName, output, verbose=False, silent=False, indent=''):
 
     return None
 
-def doTarget(json, target, ls, verbose, silent, indent):
+def doTarget(json, target, ls, verbose, silent):
     # If operating on one of the known extensions then pass it directly on.
     if target in lib.base.compressors.keys():
-        doConcat(ls, target, verbose, silent, indent)
+        doConcat(ls, target, verbose, silent)
     else:
         for subtarget in ls:
-            buildTarget(subtarget, ls, verbose, silent,  '****** ')
+            buildTarget(subtarget, ls, verbose, silent)
 
-def doTargetReference(ls, json, target, verbose, silent, indent):
+def doTargetReference(ls, json, target, verbose, silent):
     for ref in ls:
         if ref[0] == '#':
             doTask(ref[1:], json, silent)
         else:
-            doTarget(json, ref, json.get(ref), verbose, silent, indent)
+            doTarget(json, ref, json.get(ref), verbose, silent)
 
 def doTask(key, json, silent=False):
     tasks = json.get('tasks')
@@ -245,29 +231,28 @@ def doTask(key, json, silent=False):
 
     if task:
         if not silent:
-            print('****** ' + lib.message.open_block(key))
+            spinner('[INF] Making ' + key + ' target... ')
+        elif verbose:
+            print('[DEBUG] Processing -> ' + script)
 
         # Instead of handling a non-zero exit code here and throwing, each shell command will have
         # to clean up after itself.
         subprocess.call(task, shell=True)
 
         if not silent:
-            print('****** ' + lib.message.end_block())
+            print('Completed')
     elif not task and not silent:
-        print(lib.message.warning(key))
+        print('[WARNING] Unrecognized task ' + task)
         sys.exit(1)
 
-def doTranspile(transpiler, target, src, verbose=False, silent=False, indent=''):
-    if not indent:
-        indent = '****** '
+def doTranspile(transpiler, target, src, verbose=False, silent=False):
+    if not silent:
+        spinner('[INF] Transpiling target ' + target + ' using ' +  transpiler + '... ')
+
+    buff = subprocess.getoutput(transpiler + ' ' + src)
 
     if not silent:
-        print(indent + lib.message.transpiling(target, transpiler))
-
-    return subprocess.getoutput(transpiler + ' ' + src)
-
-#    if not silent:
-#        print(indent + lib.message.end_block())
+        print('Completed')
 
     return buff
 
@@ -276,6 +261,14 @@ def getNestedTarget(keys, ls):
         ls = ls.get(key)
 
     return ls
+
+def spinner(msg):
+    spinner = itertools.cycle(['-', '\\', '|', '/'])
+
+    sys.stdout.write(msg + next(spinner))
+    sys.stdout.write('\b')
+    sys.stdout.flush()
+    sys.stdout.write('\b')
 
 if __name__ == '__main__':
     main(sys.argv[1:])

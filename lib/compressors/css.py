@@ -1,5 +1,4 @@
 import lib.base
-from lib.bcolors import bcolors
 import re
 import sys
 
@@ -23,7 +22,7 @@ def compress(src, verbose=False, silent=False, jar=None):
         reReplaceDoubleSpaces = re.compile(r'\s{2,}')
 
         if verbose:
-            print(bcolors.ON_BLUE + bcolors.BROWN + '[DEBUG]' + bcolors.ON_WHITE +  bcolors.YELLOW + ' Processing -> ' + bcolors.ENDC + src)
+            print('[DEBUG] Processing -> ' + src)
 
         # Note that `src` is the full path name.
         with open(src) as f:
