@@ -1,4 +1,4 @@
-# Utley is all of the following things.
+# Utley is all of the following things:
 
 + A dog (he's Top Dog, actually).
 
@@ -144,8 +144,6 @@ As you probably guessed by now, this can be called like:
     utley build
 
 The previous snippets were taken from the `utley.json` [build file] in my [Music Theory][repo] repo.
-[build file]: https://github.com/btoll/music_theory/blob/master/utley.json
-[repo]: https://github.com/btoll/music_theory
 
 ## CLI Examples
 
@@ -218,20 +216,9 @@ List the `build` target.
 ## Some `utley.json` Examples In The Wild
 
 + [build file][build file0] in [benjamintoll.com][repo0] repo.
-[build file0]: https://github.com/btoll/benjamintoll.com/blob/master/utley.json
-[repo0]: https://github.com/btoll/benjamintoll.com
-
 + [build file][build file1] in [Music Theory][repo1] repo.
-[build file1]: https://github.com/btoll/music_theory/blob/master/utley.json
-[repo1]: https://github.com/btoll/music_theory
-
 + [build file][build file2] in [notefile][repo2] repo.
-[build file2]: https://github.com/btoll/notefile/blob/master/utley.json
-[repo2]: https://github.com/btoll/notefile
-
 + [build file][build file3] in [PeteJS][repo3] repo.
-[build file3]: https://github.com/btoll/PeteJS/blob/master/utley.json
-[repo3]: https://github.com/btoll/PeteJS
 
 ## Usage
 
@@ -247,5 +234,16 @@ List the `build` target.
 
 ## What is the license?
 + Utley is [free][wtfpl].
+
+[build file]: https://github.com/btoll/music_theory/blob/master/utley.json
+[repo]: https://github.com/btoll/music_theory
+[build file0]: https://github.com/btoll/benjamintoll.com/blob/master/utley.json
+[build file1]: https://github.com/btoll/music_theory/blob/master/utley.json
+[build file2]: https://github.com/btoll/notefile/blob/master/utley.json
+[build file3]: https://github.com/btoll/PeteJS/blob/master/utley.json
+[repo0]: https://github.com/btoll/benjamintoll.com
+[repo1]: https://github.com/btoll/music_theory
+[repo2]: https://github.com/btoll/notefile
+[repo3]: https://github.com/btoll/PeteJS
 [wtfpl]: http://www.wtfpl.net/
 
