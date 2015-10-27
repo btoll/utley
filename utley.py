@@ -223,8 +223,12 @@ def doTarget(json, target, ls, verbose, silent):
     if target in lib.base.compressors.keys():
         doConcat(ls, target, verbose, silent)
     else:
-        for subtarget in ls:
-            buildTarget(subtarget, ls, verbose, silent)
+        if ls == None:
+            print('[ERROR] Unrecognized target `' + target + '`')
+            sys.exit(1)
+        else:
+            for subtarget in ls:
+                buildTarget(subtarget, ls, verbose, silent)
 
 def doTargetReference(ls, json, target, verbose, silent):
     for ref in ls:
@@ -243,7 +247,7 @@ def doTask(key, json, verbose=False, silent=False):
             print('[DEBUG] Processing -> ' + task)
 
         if not silent:
-            spinner('[INF] Making ' + key + ' target... ')
+            spinner('[INF] Running ' + key + ' target... ')
 
         # Instead of handling a non-zero exit code here and throwing, each shell command will have
         # to clean up after itself.
@@ -252,7 +256,7 @@ def doTask(key, json, verbose=False, silent=False):
         if not silent:
             print('Completed')
     elif not task and not silent:
-        print('[WARNING] Unrecognized task ' + task)
+        print('[ERROR] Unrecognized task `' + key + '`')
         sys.exit(1)
 
 def doTranspile(transpiler, target, src, verbose=False, silent=False):
