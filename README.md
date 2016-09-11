@@ -149,14 +149,10 @@ The previous snippets were taken from the `utley.json` [build file] in my [Music
 
 ##### Targets
 
-*** Note that any target(s) can use the shortcut ***
-
-    utley [target(,s)]
-
 Build only the CSS target.
 
     utley --target=css
-    utley css
+    utley css // Shortcut, same as above.
 
 Build only the JavaScript target.
 
@@ -180,14 +176,10 @@ Build whatever you want.
 
 ##### Tasks
 
-*** Note that any task defined in the `tasks` block can be aliased by ***
-
-    utley --[task]
-
 Clean (assuming it's defined in the `tasks` block).
 
     utley --task=clean
-    utley --clean
+    utley --clean // Shortcut, same as above.
 
 Lint (assuming it's defined in the `tasks` block).
 
@@ -232,8 +224,9 @@ List the `build` target.
     --task | Runs the shell command in the `tasks` block.
     --verbose, -v | Print build information.
 
-## What is the license?
-+ Utley is [free][wtfpl].
+## License
+
+[MIT](LICENSE)
 
 [build file]: https://github.com/btoll/music_theory/blob/master/utley.json
 [repo]: https://github.com/btoll/music_theory
@@ -245,5 +238,4 @@ List the `build` target.
 [repo1]: https://github.com/btoll/music_theory
 [repo2]: https://github.com/btoll/notefile
 [repo3]: https://github.com/btoll/PeteJS
-[wtfpl]: http://www.wtfpl.net/
 
