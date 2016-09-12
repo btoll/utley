@@ -87,12 +87,16 @@ def initiateBuild(targets=None, verbose=False, silent=False, configFile='utley.j
 
 def buildTarget(target, json, verbose=False, silent=False):
     if not isinstance(target, dict):
-        # Check to see if target is a subtarget (i.e., 'quizzes.chord_buider'). It will only be dot-separated
-        # if explicitly passed as a build target.
-        ls = checkNestedTarget(target, json)
-
         if not silent:
             print('Initiating ' + target + ' target...')
+
+        # Allows for building a top-level target by name, i.e. `js@foo`.
+        if '@' in target:
+            # Redefine `target` since as it needs to be either js, json or css.
+            [target, name] = target.split('@')
+            ls = [item for item in getTarget(target, json) if item.get('name') == name]
+        else:
+            ls = getTarget(target, json)
 
         if containsTargetReferences(ls):
             doTargetReference(ls, json, target, verbose, silent)
@@ -105,13 +109,10 @@ def buildTarget(target, json, verbose=False, silent=False):
             if key in lib.base.compressors.keys():
                 doConcat(target.get(key), key, verbose, silent)
 
-def checkNestedTarget(target, json):
-    if '.' in target:
-        ls = getNestedTarget(target.split('.'), json)
-    else:
-        ls = json.get(target)
-
-    return ls
+def getTarget(target, json):
+    # Check to see if target is a subtarget (i.e., 'quizzes.chord_buider').
+    # It will only be dot-separated if explicitly passed as a build target.
+    return getNestedTarget(target.split('.'), json) if '.' in target else json.get(target)
 
 def containsTargetReferences(target):
     return isinstance(target, list) and isinstance(target[0], str)
@@ -239,7 +240,7 @@ def doTargetReference(ls, json, target, verbose, silent):
         if ref[0] == '#':
             doTask(ref[1:], json, verbose, silent)
         else:
-            ls = checkNestedTarget(ref, json)
+            ls = getTarget(ref, json)
             doTarget(json, ref, ls, verbose, silent)
 
 def doTask(key, json, verbose=False, silent=False):
