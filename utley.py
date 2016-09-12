@@ -118,7 +118,7 @@ def containsTargetReferences(target):
 
 def doCompress(compressor, targetName, src, verbose=False, silent=False):
     if not silent:
-        message = '[INF] Compressing target ' + targetName
+        message = '[INF] Compressing target'
 
         # Note that the CSS is compressed using regexes so there is no compressor to name.
         if not isinstance(compressor, bool):
@@ -144,7 +144,8 @@ def doConcat(target, targetName, verbose=False, silent=False):
 
     for t in target:
         if not silent:
-            spinner('[INF] Concatenating target ' + targetName + '... ')
+            print('[INF] Building target ' + t.get('output'))
+            spinner('[INF] Concatenating target... ')
 
         buff = []
 
@@ -213,6 +214,9 @@ def doPreprocessing(targetName, output, verbose=False, silent=False):
 
             if compress:
                 buff = doCompress(compress, targetName, output, verbose, silent)
+
+            if not silent:
+                print('\n')
 
             return buff
 
