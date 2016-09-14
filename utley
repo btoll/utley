@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # TODO: Bake semver into build artifacts.
 # TODO: Make more verbose.
 
@@ -11,18 +13,22 @@ import subprocess
 import sys
 
 builds = {}
+silent = False
+utleyCfg = None
+verbose = False
 
 def main(argv):
+    global silent
+    global verbose
+
     configFile = 'utley.json'
     dumpTarget = None
-    silent = False
     task = None
     targets = None
-    verbose = False
 
     if len(argv) == 0:
         # Assumes `utley.json` config file.
-        initiateBuild(None, verbose, silent, configFile)
+        initiateBuild(None, configFile)
     elif len(argv) == 1 and '--' in argv[0] and not '=' in argv[0]:
         # This provides a shortcut for calling shell commands defined in the `tasks` block. For example, the `clean` script
         # could be called as `utley --clean`. So, anything defined in the `tasks` block can be aliased by prefixing `--`.
@@ -32,14 +38,14 @@ def main(argv):
             usage()
             sys.exit(0)
 
-        doTask(opt, lib.base.getJson(configFile), verbose, silent)
+        doTask(opt, lib.base.getJson(configFile))
 
     elif len(argv) == 1 and not '=' in argv[0] and not '-' in argv[0]:
         # This provides a shortcut for calling target. For example, the `build` target could be called as `utley build`.
-        initiateBuild(lib.base.make_list(argv[0]), verbose, silent, configFile)
+        initiateBuild(lib.base.make_list(argv[0]), configFile)
     else:
         try:
-            opts, args = getopt.getopt(argv, 'hc:l:v', ['config=', 'list=', 'silent', 'target=', 'task=', 'verbose'])
+            opts, args = getopt.getopt(argv, 'hc:l:sv', ['config=', 'list=', 'silent', 'target=', 'task=', 'verbose'])
         except getopt.GetoptError:
             print('[ERROR] Unrecognized flag!')
             usage()
@@ -53,7 +59,8 @@ def main(argv):
                 configFile = arg
             elif opt in ('-l', '--list'):
                 dumpTarget = arg
-            elif opt == '--silent':
+#            elif opt == '--silent':
+            elif opt == '-s':
                 silent = True
             elif opt == '--target':
                 targets = lib.base.make_list(arg)
@@ -65,27 +72,14 @@ def main(argv):
         if dumpTarget:
             print(json.dumps(lib.base.getJson(configFile).get(dumpTarget), indent=4) + '\n')
         elif targets:
-            initiateBuild(targets, verbose, silent, configFile)
+            initiateBuild(targets, configFile)
         elif task:
-            doTask(task, lib.base.getJson(configFile), verbose, silent)
+            doTask(task, lib.base.getJson(configFile))
         else:
             print('[ERROR] No ' + target + ' target found, aborting.')
             sys.exit(1)
 
-def initiateBuild(targets=None, verbose=False, silent=False, configFile='utley.json'):
-    json = lib.base.getJson(configFile)
-
-    if targets:
-        for target in targets:
-            buildTarget(target, json, verbose, silent)
-    else:
-        for target in json:
-            if target == 'tasks':
-                continue
-
-            buildTarget(target, json, verbose, silent)
-
-def buildTarget(target, json, verbose=False, silent=False):
+def buildTarget(target, json):
     if not isinstance(target, dict):
         if not silent:
             print('Initiating ' + target + ' target...')
@@ -99,62 +93,69 @@ def buildTarget(target, json, verbose=False, silent=False):
             ls = getTarget(target, json)
 
         if containsTargetReferences(ls):
-            doTargetReference(ls, json, target, verbose, silent)
+            doTargetReference(ls, json, target)
         else:
-            doTarget(json, target, ls, verbose, silent)
+            doTarget(json, target, ls)
 
     else:
         # If a dict then we can't recurse any further, compress and we're done.
         for key, value in target.items():
             if key in lib.base.compressors.keys():
-                doConcat(target.get(key), key, verbose, silent)
-
-def getTarget(target, json):
-    # Check to see if target is a subtarget (i.e., 'quizzes.chord_buider').
-    # It will only be dot-separated if explicitly passed as a build target.
-    return getNestedTarget(target.split('.'), json) if '.' in target else json.get(target)
+                doConcat(target.get(key), key)
 
 def containsTargetReferences(target):
     return isinstance(target, list) and isinstance(target[0], str)
 
-def doCompress(compressor, targetName, src, verbose=False, silent=False):
-    if not silent:
-        message = '[INF] Compressing target'
+def doCompress(cfg, target, src):
+    global utleyCfg
+    buff = ''
 
-        # Note that the CSS is compressed using regexes so there is no compressor to name.
-        if not isinstance(compressor, bool):
-            message += ' with compressor ' + compressor
+    if not utleyCfg:
+        utleyCfg = lib.base.getJson(lib.base.getConfigFileLocation())
 
-        message += '... '
-        spinner(message)
+    lang = utleyCfg.get(target)
+    compressor = cfg.get('compress') or lang.get('compress')
 
-    if targetName == 'css' or targetName == 'json':
-        buff = lib.compressors.css.compress(src, verbose, silent)
-    elif targetName == 'js':
-        buff = subprocess.getoutput(compressor + ' ' + src)
+    if lang and compressor:
+#        if not silent:
+#            message = '[INF] Compressing target'
+#
+#            # Note that the CSS is compressed using regexes so there is no compressor to name.
+#            if not isinstance(compressor, bool):
+#                message += ' with compressor ' + compressor
+#
+#            message += '... '
+#            spinner(message)
 
-    if not silent:
-        print('Completed')
+        if target == 'css' or target == 'json':
+            buff = lib.compressors.css.compress(src)
+        elif target == 'js':
+            buff = subprocess.getoutput(compressor + ' ' + src)
+
+        if not silent:
+            print('Completed')
+    elif not silent:
+        print('[INF] No compressor found')
 
     return buff
 
-def doConcat(target, targetName, verbose=False, silent=False):
+def doConcat(target, targetName):
     global builds
 
     preprocessed = None
 
-    for t in target:
+    for targetCfg in target:
         if not silent:
-            print('[INF] Building target ' + t.get('output'))
+            print('[INF] Building target ' + targetCfg.get('output'))
             spinner('[INF] Concatenating target... ')
 
         buff = []
 
-        src = t.get('src')
-        output = t.get('output')
-        dependencies = t.get('dependencies', [])
-        exclude = t.get('exclude', [])
-        name = t.get('name', '')
+        src = targetCfg.get('src')
+        outputFile = targetCfg.get('output')
+        dependencies = targetCfg.get('dependencies', [])
+        exclude = targetCfg.get('exclude', [])
+        name = targetCfg.get('name', '')
 
         ls = lib.base.sift_list(
             lib.base.make_list(src),
@@ -176,74 +177,47 @@ def doConcat(target, targetName, verbose=False, silent=False):
 
                 script.close()
 
-        lib.base.write_buffer(buff, output)
+        lib.base.write_buffer(buff, outputFile)
 
         if not silent:
             print('Completed')
 
         # If a named target then skip here, it probably was preprocessed the first time when it was built.
-        preprocessed = doPreprocessing(targetName, output, verbose, silent)
+#        buff = doTranspile(targetCfg, targetName, outputFile)
+        buff = doCompress(targetCfg, targetName, outputFile)
 
-        if preprocessed:
-            lib.base.write_buffer(preprocessed, output)
-            buff = preprocessed
+        if buff:
+            lib.base.write_buffer(buff, outputFile)
+
+        if not silent:
+            print('\n')
 
         if name:
             builds.update({
                 name: buff
             })
 
-def doPreprocessing(targetName, output, verbose=False, silent=False):
-    manifest = lib.base.getManifest()
-
-    if manifest:
-        rc = lib.base.getJson(manifest)
-
-        if rc:
-            lang = None
-            transpile = None
-            compress = None
-            buff = None
-            lang = rc.get(targetName)
-
-            if lang:
-                transpile = lang.get('transpile')
-                compress = lang.get('compress')
-
-            if transpile:
-                buff = doTranspile(transpile, targetName, output, verbose, silent)
-
-            if compress:
-                buff = doCompress(compress, targetName, output, verbose, silent)
-
-            if not silent:
-                print('\n')
-
-            return buff
-
-    return None
-
-def doTarget(json, target, ls, verbose, silent):
+def doTarget(json, target, ls):
     # If operating on one of the known extensions then pass it directly on.
     if target in lib.base.compressors.keys():
-        doConcat(ls, target, verbose, silent)
+        doConcat(ls, target)
     else:
         if ls == None:
             print('[ERROR] Unrecognized target `' + target + '`')
             sys.exit(1)
         else:
             for subtarget in ls:
-                buildTarget(subtarget, ls, verbose, silent)
+                buildTarget(subtarget, ls)
 
-def doTargetReference(ls, json, target, verbose, silent):
+def doTargetReference(ls, json, target):
     for ref in ls:
         if ref[0] == '#':
-            doTask(ref[1:], json, verbose, silent)
+            doTask(ref[1:], json)
         else:
             ls = getTarget(ref, json)
-            doTarget(json, ref, ls, verbose, silent)
+            doTarget(json, ref, ls)
 
-def doTask(key, json, verbose=False, silent=False):
+def doTask(key, json):
     tasks = json.get('tasks')
     task = tasks.get(key)
 
@@ -264,14 +238,26 @@ def doTask(key, json, verbose=False, silent=False):
         print('[ERROR] Unrecognized task `' + key + '`')
         sys.exit(1)
 
-def doTranspile(transpiler, target, src, verbose=False, silent=False):
-    if not silent:
-        spinner('[INF] Transpiling target ' + target + ' using ' +  transpiler + '... ')
+def doTranspile(cfg, target, src):
+    global utleyCfg
+    buff = ''
 
-    buff = subprocess.getoutput(transpiler + ' ' + src)
+    if not utleyCfg:
+        utleyCfg = lib.base.getJson(lib.base.getConfigFileLocation())
 
-    if not silent:
-        print('Completed')
+    lang = utleyCfg.get(target)
+    transpiler = cfg.get('transpile') or lang.get('transpile')
+
+    if lang and transpiler:
+        if not silent:
+            spinner('[INF] Transpiling target ' + target + ' using ' +  transpiler + '... ')
+
+        buff = subprocess.getoutput(transpiler + ' ' + src)
+
+        if not silent:
+            print('Completed')
+    elif not silent:
+        print('[INF] No transpiler found')
 
     return buff
 
@@ -280,6 +266,24 @@ def getNestedTarget(keys, ls):
         ls = ls.get(key)
 
     return ls
+
+def getTarget(target, json):
+    # Check to see if target is a subtarget (i.e., 'quizzes.chord_buider').
+    # It will only be dot-separated if explicitly passed as a build target.
+    return getNestedTarget(target.split('.'), json) if '.' in target else json.get(target)
+
+def initiateBuild(targets=None, configFile='utley.json'):
+    json = lib.base.getJson(configFile)
+
+    if targets:
+        for target in targets:
+            buildTarget(target, json)
+    else:
+        for target in json:
+            if target == 'tasks':
+                continue
+
+            buildTarget(target, json)
 
 def spinner(msg):
     spinner = itertools.cycle(['-', '\\', '|', '/'])

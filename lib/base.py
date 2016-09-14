@@ -44,7 +44,7 @@ def getJson(resource='utley.json'):
         print(e)
         sys.exit(1)
 
-def getManifest():
+def getConfigFileLocation():
     local = '.utleyrc'
     globl = os.path.expanduser('~') + '/' + local
 
