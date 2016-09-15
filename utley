@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# TODO: Bake semver into build artifacts.
+# TODO: Bake version info into build artifacts.
 # TODO: Make more verbose.
 
 import lib.base
@@ -9,6 +9,7 @@ import lib.compressors.css
 import getopt
 import json
 import itertools
+import re
 import subprocess
 import sys
 
@@ -26,58 +27,58 @@ def main(argv):
     task = None
     targets = None
 
-    if len(argv) == 0:
-        # Assumes `utley.json` config file.
-        initiateBuild(None, configFile)
-    elif len(argv) == 1 and '--' in argv[0] and not '=' in argv[0]:
-        # This provides a shortcut for calling shell commands defined in the `tasks` block. For example, the `clean` script
-        # could be called as `utley --clean`. So, anything defined in the `tasks` block can be aliased by prefixing `--`.
-        opt = argv[0][2:]
+    # \A = Matches only at the start of the string.
+    targetOpts = [arg for arg in argv if re.search('\A\w+', arg)]
+    shortOpts = [arg for arg in argv if re.search('\A-{1}\w', arg)]
+    taskOpts = [arg for arg in argv if re.search('\A-{2}\w', arg)]
 
-        if opt == 'help':
+    try:
+        opts, args = getopt.getopt(shortOpts, 'c:hl:st:v')
+    except getopt.GetoptError:
+        print('[ERROR] Unrecognized flag!')
+        usage()
+        sys.exit(1)
+
+    for opt, arg in opts:
+        if opt == '-h':
             usage()
             sys.exit(0)
+        elif opt == '-c':
+            configFile = arg
+        elif opt == '-l':
+            dumpTarget = arg
+        elif opt == '-s':
+            silent = True
+        elif opt == '-t':
+            targets = lib.base.make_list(arg)
+        elif opt == '--task':
+            task = arg
+        elif opt == '-v':
+            verbose = True
 
-        doTask(opt, lib.base.getJson(configFile))
-
-    elif len(argv) == 1 and not '=' in argv[0] and not '-' in argv[0]:
-        # This provides a shortcut for calling target. For example, the `build` target could be called as `utley build`.
-        initiateBuild(lib.base.make_list(argv[0]), configFile)
+    if not len(targetOpts) and not len(taskOpts) and not targets:
+        # Assumes `utley.json` config file.
+        initiateBuild(None, configFile)
+    elif len(taskOpts):
+        # This provides a shortcut for calling shell commands defined in the `tasks` block. For example, the `clean` script
+        # could be called as `utley --clean`. So, anything defined in the `tasks` block can be aliased by prefixing `--`.
+        for arg in taskOpts:
+            # Chop off '--' prefix.
+            doTask(arg[2:], lib.base.getJson(configFile))
     else:
-        try:
-            opts, args = getopt.getopt(argv, 'hc:l:sv', ['config=', 'list=', 'silent', 'target=', 'task=', 'verbose'])
-        except getopt.GetoptError:
-            print('[ERROR] Unrecognized flag!')
-            usage()
-            sys.exit(1)
-
-        for opt, arg in opts:
-            if opt == '-h':
-                usage()
-                sys.exit(0)
-            elif opt in ('-c', '--config'):
-                configFile = arg
-            elif opt in ('-l', '--list'):
-                dumpTarget = arg
-#            elif opt == '--silent':
-            elif opt == '-s':
-                silent = True
-            elif opt == '--target':
-                targets = lib.base.make_list(arg)
-            elif opt == '--task':
-                task = arg
-            elif opt in ('-v', '--verbose'):
-                verbose = True
-
-        if dumpTarget:
-            print(json.dumps(lib.base.getJson(configFile).get(dumpTarget), indent=4) + '\n')
-        elif targets:
-            initiateBuild(targets, configFile)
-        elif task:
-            doTask(task, lib.base.getJson(configFile))
-        else:
-            print('[ERROR] No ' + target + ' target found, aborting.')
-            sys.exit(1)
+        # This provides a shortcut for calling target. For example, the `build` target could be called as `utley build`.
+        for arg in targetOpts:
+            initiateBuild(lib.base.make_list(arg), configFile)
+#    else:
+#        if dumpTarget:
+#            print(json.dumps(lib.base.getJson(configFile).get(dumpTarget), indent=4) + '\n')
+#        elif targets:
+#            initiateBuild(targets, configFile)
+#        elif task:
+#            doTask(task, lib.base.getJson(configFile))
+#        else:
+#            print('[ERROR] No ' + target + ' target found, aborting.')
+#            sys.exit(1)
 
 def buildTarget(target, json):
     if not isinstance(target, dict):
@@ -131,9 +132,6 @@ def doCompress(cfg, target, src):
             buff = lib.compressors.css.compress(src)
         elif target == 'js':
             buff = subprocess.getoutput(compressor + ' ' + src)
-
-        if not silent:
-            print('Completed')
     elif not silent:
         print('[INF] No compressor found')
 
@@ -188,9 +186,6 @@ def doConcat(target, targetName):
 
         if buff:
             lib.base.write_buffer(buff, outputFile)
-
-        if not silent:
-            print('\n')
 
         if name:
             builds.update({
