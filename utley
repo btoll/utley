@@ -14,9 +14,12 @@ import subprocess
 import sys
 
 builds = {}
+isCompressed = False
+isTranspiled = False
 silent = False
 utleyCfg = None
 verbose = False
+reTaskRef = re.compile(r'utley -*(\w+)')
 
 def main(argv):
     global silent
@@ -56,6 +59,7 @@ def main(argv):
         elif opt == '-v':
             verbose = True
 
+    # Run all targets, `utley`
     if not len(targetOpts) and not len(taskOpts) and not targets:
         # Assumes `utley.json` config file.
         initiateBuild(None, configFile)
@@ -64,7 +68,15 @@ def main(argv):
         # could be called as `utley --clean`. So, anything defined in the `tasks` block can be aliased by prefixing `--`.
         for arg in taskOpts:
             # Chop off '--' prefix.
-            doTask(arg[2:], lib.base.getJson(configFile))
+            task = arg[2:]
+
+            if not silent:
+                spinner('[INF] Running ' + task + ' target... ')
+
+            doTask(task, lib.base.getJson(configFile))
+
+            if not silent:
+                print('Completed')
     else:
         # This provides a shortcut for calling target. For example, the `build` target could be called as `utley build`.
         for arg in targetOpts:
@@ -108,6 +120,7 @@ def containsTargetReferences(target):
     return isinstance(target, list) and isinstance(target[0], str)
 
 def doCompress(cfg, target, src):
+    global isCompressed
     global utleyCfg
     buff = ''
 
@@ -115,7 +128,7 @@ def doCompress(cfg, target, src):
         utleyCfg = lib.base.getJson(lib.base.getConfigFileLocation())
 
     lang = utleyCfg.get(target)
-    compressor = cfg.get('compress') or lang.get('compress')
+    compressor = cfg.get('compress') if cfg.get('compress') != None else lang.get('compress')
 
     if lang and compressor:
 #        if not silent:
@@ -127,15 +140,17 @@ def doCompress(cfg, target, src):
 #
 #            message += '... '
 #            spinner(message)
-
         if target == 'css' or target == 'json':
             buff = lib.compressors.css.compress(src)
         elif target == 'js':
-            buff = subprocess.getoutput(compressor + ' ' + src)
+            # Note that `isTranspiled` is set if the js has been transpiled.
+            buff = subprocess.check_output(compressor + ' <(echo "' + src + '")', shell=True, executable='/bin/bash', universal_newlines=True) if isTranspiled else subprocess.getoutput(compressor + ' ' + src)
+
+        isCompressed = True
     elif not silent:
         print('[INF] No compressor found')
 
-    return buff
+    return buff if isCompressed else src
 
 def doConcat(target, targetName):
     global builds
@@ -181,8 +196,8 @@ def doConcat(target, targetName):
             print('Completed')
 
         # If a named target then skip here, it probably was preprocessed the first time when it was built.
-#        buff = doTranspile(targetCfg, targetName, outputFile)
-        buff = doCompress(targetCfg, targetName, outputFile)
+        buff = doTranspile(targetCfg, targetName, outputFile)
+        buff = doCompress(targetCfg, targetName, buff)
 
         if buff:
             lib.base.write_buffer(buff, outputFile)
@@ -220,20 +235,20 @@ def doTask(key, json):
         if verbose:
             print('[DEBUG] Processing -> ' + task)
 
-        if not silent:
-            spinner('[INF] Running ' + key + ' target... ')
-
-        # Instead of handling a non-zero exit code here and throwing, each shell command will have
-        # to clean up after itself.
-        subprocess.call(task, shell=True)
-
-        if not silent:
-            print('Completed')
+        # If the task references another task, don't create a subprocess.
+        if 'utley' in task:
+            m = reTaskRef.match(task)
+            doTask(m.group(1), json)
+        else:
+            # Instead of handling a non-zero exit code here and throwing, each shell command will have
+            # to clean up after itself.
+            subprocess.call(task, shell=True)
     elif not task and not silent:
         print('[ERROR] Unrecognized task `' + key + '`')
         sys.exit(1)
 
-def doTranspile(cfg, target, src):
+def doTranspile(cfg, target, outputFile):
+    global isTranspiled
     global utleyCfg
     buff = ''
 
@@ -241,20 +256,22 @@ def doTranspile(cfg, target, src):
         utleyCfg = lib.base.getJson(lib.base.getConfigFileLocation())
 
     lang = utleyCfg.get(target)
-    transpiler = cfg.get('transpile') or lang.get('transpile')
+    transpiler = cfg.get('transpile') if cfg.get('transpile') != None else lang.get('transpile')
 
     if lang and transpiler:
         if not silent:
             spinner('[INF] Transpiling target ' + target + ' using ' +  transpiler + '... ')
 
-        buff = subprocess.getoutput(transpiler + ' ' + src)
+        buff = subprocess.getoutput(transpiler + ' ' + outputFile)
+        isTranspiled = True
 
         if not silent:
             print('Completed')
     elif not silent:
-        print('[INF] No transpiler found')
+        print('[INF] No transpile operation')
 
-    return buff
+    # Return the filepath if no transpilation has occurred.
+    return buff if isTranspiled else outputFile
 
 def getNestedTarget(keys, ls):
     for key in keys:
@@ -263,7 +280,7 @@ def getNestedTarget(keys, ls):
     return ls
 
 def getTarget(target, json):
-    # Check to see if target is a subtarget (i.e., 'quizzes.chord_buider').
+    # Check to see if target is a subtarget (i.e., 'quizzes.chord_builder').
     # It will only be dot-separated if explicitly passed as a build target.
     return getNestedTarget(target.split('.'), json) if '.' in target else json.get(target)
 
