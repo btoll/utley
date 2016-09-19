@@ -128,21 +128,6 @@ These can be called like:
     utley --clean
     utley --lint
 
-Lastly, you can specify other custom build targets that "kick off" other targets and tasks. Note that the tasks must be prefixed by a hash (#).
-
-    "build": [
-        "#clean",
-        "#lint",
-        "css",
-        "js",
-        "json",
-        "quizzes.key_signature"
-    ]
-
-As you probably guessed by now, this can be called like:
-
-    utley build
-
 The previous snippets were taken from the `utley.json` [build file] in my [Music Theory][repo] repo.
 
 ## CLI Examples

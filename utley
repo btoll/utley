@@ -19,6 +19,22 @@ utleyCfg = None
 verbose = False
 reTaskRef = re.compile(r'utley -*(\w+)')
 
+def buildTargetOrTask(allTargetAndTaskOpts, json):
+    for arg in allTargetAndTaskOpts:
+        if '--' in arg:
+            # Chop off '--' prefix.
+            task = arg[2:]
+
+            if not silent:
+                spinner('Initiating ' + task + ' task... ')
+
+            doTask(task, json)
+
+            if not silent:
+                print('Completed\n')
+        else:
+            buildTarget(arg, json)
+
 def main(argv):
     global silent
     global verbose
@@ -58,58 +74,37 @@ def main(argv):
         elif opt == '-v':
             verbose = True
 
+    json = lib.base.getJson(configFile)
     # Run all targets, `utley`
 #    if not len(targetOpts) and not len(taskOpts) and not targets:
     if not len(allTargetAndTaskOpts) and not targets:
         # Assumes `utley.json` config file.
-        initiateBuild(None, configFile)
+        for target in json:
+            if target == 'tasks':
+                continue
+
+            buildTarget(target, json)
     elif len(allTargetAndTaskOpts):
         # This provides a shortcut for calling top-level targets (js, css, etc.) or shell commands
         # defined in the `tasks` block.
-        for arg in allTargetAndTaskOpts:
-            if '--' in arg:
-                # Chop off '--' prefix.
-                task = arg[2:]
-
-                if not silent:
-                    spinner('\nInitiating ' + task + ' task... ')
-
-                doTask(task, lib.base.getJson(configFile))
-            else:
-                initiateBuild(lib.base.make_list(arg), configFile)
-
-            if not silent:
-                print('Completed\n')
+        buildTargetOrTask(allTargetAndTaskOpts, json)
     else:
         print('[ERROR] No ' + target + ' target found, aborting.')
         sys.exit(1)
 
 def buildTarget(target, json):
-    if not isinstance(target, dict):
-        if not silent:
-            print('Initiating ' + target + ' target...')
+    if not silent:
+        print('Initiating ' + target + ' target...')
 
-        # Allows for building a top-level target by name, i.e. `js@foo`.
-        if '@' in target:
-            # Redefine `target` since as it needs to be either js, json or css.
-            [target, name] = target.split('@')
-            ls = [item for item in getTarget(target, json) if item.get('name') == name]
-        else:
-            ls = getTarget(target, json)
-
-        if containsTargetReferences(ls):
-            doTargetReference(ls, json, target)
-        else:
-            doTarget(json, target, ls)
-
+    # Allows for building a top-level target by name, i.e. `js@foo`.
+    if '@' in target:
+        # Redefine `target` since as it needs to be either js, json or css.
+        [target, name] = target.split('@')
+        ls = [item for item in getTarget(target, json) if item.get('name') == name]
     else:
-        # If a dict then we can't recurse any further, compress and we're done.
-        for key, value in target.items():
-            if key in lib.base.compressors.keys():
-                doConcat(target.get(key), key)
+        ls = getTarget(target, json)
 
-def containsTargetReferences(target):
-    return isinstance(target, list) and isinstance(target[0], str)
+    doTarget(json, target, ls)
 
 def doCompress(cfg, target, buff):
     global utleyCfg
@@ -143,7 +138,7 @@ def doConcat(target, targetName):
 
     for targetCfg in target:
         if not silent:
-            print('\t[TARGET] Building target ' + targetCfg.get('output'))
+            print('\n\t[TARGET] Building target ' + targetCfg.get('output'))
             spinner('\t\t[INF] Concatenating target... ')
 
         buff = []
@@ -203,14 +198,6 @@ def doTarget(json, target, ls):
             for subtarget in ls:
                 buildTarget(subtarget, ls)
 
-def doTargetReference(ls, json, target):
-    for ref in ls:
-        if ref[0] == '#':
-            doTask(ref[1:], json)
-        else:
-            ls = getTarget(ref, json)
-            doTarget(json, ref, ls)
-
 def doTask(key, json):
     tasks = json.get('tasks')
     task = tasks.get(key)
@@ -221,8 +208,7 @@ def doTask(key, json):
 
         # If the task references another task, don't create a subprocess.
         if 'utley' in task:
-            m = reTaskRef.match(task)
-            doTask(m.group(1), json)
+            buildTargetOrTask([arg for arg in task.split(' ')[1:] if re.search('\A[-{2}\w|\w+]', arg)], json)
         else:
             # Instead of handling a non-zero exit code here and throwing, each shell command will have
             # to clean up after itself.
@@ -268,19 +254,6 @@ def getTarget(target, json):
     # Check to see if target is a subtarget (i.e., 'quizzes.chord_builder').
     # It will only be dot-separated if explicitly passed as a build target.
     return getNestedTarget(target.split('.'), json) if '.' in target else json.get(target)
-
-def initiateBuild(targets=None, configFile='utley.json'):
-    json = lib.base.getJson(configFile)
-
-    if targets:
-        for target in targets:
-            buildTarget(target, json)
-    else:
-        for target in json:
-            if target == 'tasks':
-                continue
-
-            buildTarget(target, json)
 
 def spinner(msg):
     spinner = itertools.cycle(['-', '\\', '|', '/'])
