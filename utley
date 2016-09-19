@@ -14,8 +14,6 @@ import subprocess
 import sys
 
 builds = {}
-isCompressed = False
-isTranspiled = False
 silent = False
 utleyCfg = None
 verbose = False
@@ -30,10 +28,11 @@ def main(argv):
     task = None
     targets = None
 
+    # TODO: Can this be cleaned up?
     # \A = Matches only at the start of the string.
-    targetOpts = [arg for arg in argv if re.search('\A\w+', arg)]
     shortOpts = [arg for arg in argv if re.search('\A-{1}\w', arg)]
-    taskOpts = [arg for arg in argv if re.search('\A-{2}\w', arg)]
+    # Match `--clean` or `js`
+    allTargetAndTaskOpts = [arg for arg in argv if re.search('\A[-{2}\w|\w+]', arg)]
 
     try:
         opts, args = getopt.getopt(shortOpts, 'c:hl:st:v')
@@ -60,37 +59,30 @@ def main(argv):
             verbose = True
 
     # Run all targets, `utley`
-    if not len(targetOpts) and not len(taskOpts) and not targets:
+#    if not len(targetOpts) and not len(taskOpts) and not targets:
+    if not len(allTargetAndTaskOpts) and not targets:
         # Assumes `utley.json` config file.
         initiateBuild(None, configFile)
-    elif len(taskOpts):
-        # This provides a shortcut for calling shell commands defined in the `tasks` block. For example, the `clean` script
-        # could be called as `utley --clean`. So, anything defined in the `tasks` block can be aliased by prefixing `--`.
-        for arg in taskOpts:
-            # Chop off '--' prefix.
-            task = arg[2:]
+    elif len(allTargetAndTaskOpts):
+        # This provides a shortcut for calling top-level targets (js, css, etc.) or shell commands
+        # defined in the `tasks` block.
+        for arg in allTargetAndTaskOpts:
+            if '--' in arg:
+                # Chop off '--' prefix.
+                task = arg[2:]
+
+                if not silent:
+                    spinner('\nInitiating ' + task + ' task... ')
+
+                doTask(task, lib.base.getJson(configFile))
+            else:
+                initiateBuild(lib.base.make_list(arg), configFile)
 
             if not silent:
-                spinner('[INF] Running ' + task + ' target... ')
-
-            doTask(task, lib.base.getJson(configFile))
-
-            if not silent:
-                print('Completed')
+                print('Completed\n')
     else:
-        # This provides a shortcut for calling target. For example, the `build` target could be called as `utley build`.
-        for arg in targetOpts:
-            initiateBuild(lib.base.make_list(arg), configFile)
-#    else:
-#        if dumpTarget:
-#            print(json.dumps(lib.base.getJson(configFile).get(dumpTarget), indent=4) + '\n')
-#        elif targets:
-#            initiateBuild(targets, configFile)
-#        elif task:
-#            doTask(task, lib.base.getJson(configFile))
-#        else:
-#            print('[ERROR] No ' + target + ' target found, aborting.')
-#            sys.exit(1)
+        print('[ERROR] No ' + target + ' target found, aborting.')
+        sys.exit(1)
 
 def buildTarget(target, json):
     if not isinstance(target, dict):
@@ -119,10 +111,8 @@ def buildTarget(target, json):
 def containsTargetReferences(target):
     return isinstance(target, list) and isinstance(target[0], str)
 
-def doCompress(cfg, target, src):
-    global isCompressed
+def doCompress(cfg, target, buff):
     global utleyCfg
-    buff = ''
 
     if not utleyCfg:
         utleyCfg = lib.base.getJson(lib.base.getConfigFileLocation())
@@ -131,26 +121,20 @@ def doCompress(cfg, target, src):
     compressor = cfg.get('compress') if cfg.get('compress') != None else lang.get('compress')
 
     if lang and compressor:
-#        if not silent:
-#            message = '[INF] Compressing target'
-#
-#            # Note that the CSS is compressed using regexes so there is no compressor to name.
-#            if not isinstance(compressor, bool):
-#                message += ' with compressor ' + compressor
-#
-#            message += '... '
-#            spinner(message)
+        if not silent:
+            spinner('\t\t[INF] Compressing target ' + target + '... ')
+
         if target == 'css' or target == 'json':
-            buff = lib.compressors.css.compress(src)
+            buff = lib.compressors.css.compress(buff)
         elif target == 'js':
-            # Note that `isTranspiled` is set if the js has been transpiled.
-            buff = subprocess.check_output(compressor + ' <(echo "' + src + '")', shell=True, executable='/bin/bash', universal_newlines=True) if isTranspiled else subprocess.getoutput(compressor + ' ' + src)
+            buff = subprocess.check_output(compressor + ' <(echo "' + buff + '")', shell=True, executable='/bin/bash', universal_newlines=True)
 
-        isCompressed = True
+        if not silent:
+            print('Completed')
     elif not silent:
-        print('[INF] No compressor found')
+        print('\t\t[INF] No compression operation')
 
-    return buff if isCompressed else src
+    return buff
 
 def doConcat(target, targetName):
     global builds
@@ -159,8 +143,8 @@ def doConcat(target, targetName):
 
     for targetCfg in target:
         if not silent:
-            print('[INF] Building target ' + targetCfg.get('output'))
-            spinner('[INF] Concatenating target... ')
+            print('\t[TARGET] Building target ' + targetCfg.get('output'))
+            spinner('\t\t[INF] Concatenating target... ')
 
         buff = []
 
@@ -248,7 +232,6 @@ def doTask(key, json):
         sys.exit(1)
 
 def doTranspile(cfg, target, outputFile):
-    global isTranspiled
     global utleyCfg
     buff = ''
 
@@ -260,18 +243,20 @@ def doTranspile(cfg, target, outputFile):
 
     if lang and transpiler:
         if not silent:
-            spinner('[INF] Transpiling target ' + target + ' using ' +  transpiler + '... ')
+            spinner('\t\t[INF] Transpiling target ' + target + ' using ' +  transpiler + '... ')
 
         buff = subprocess.getoutput(transpiler + ' ' + outputFile)
-        isTranspiled = True
 
         if not silent:
             print('Completed')
     elif not silent:
-        print('[INF] No transpile operation')
+        with open(outputFile) as f:
+            buff = f.read()
+
+        print('\t\t[INF] No transpilation operation')
 
     # Return the filepath if no transpilation has occurred.
-    return buff if isTranspiled else outputFile
+    return buff
 
 def getNestedTarget(keys, ls):
     for key in keys:

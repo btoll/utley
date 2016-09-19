@@ -4,7 +4,7 @@ import sys
 
 def compress(src, verbose=False, silent=False, jar=None):
     if not src:
-        print('Error: You must provide the location of the source files.')
+        print('Error: No source, nothing to do!')
         sys.exit(1)
 
     try:
@@ -22,18 +22,14 @@ def compress(src, verbose=False, silent=False, jar=None):
         reReplaceDoubleSpaces = re.compile(r'\s{2,}')
 
         if verbose:
-            print('[DEBUG] Processing -> ' + src)
+            print('[DEBUG] Processing -> ' + outputFile)
 
-        # Note that `src` is the full path name.
-        with open(src) as f:
-            file_contents = f.read()
+        src = reStripComments.sub('', src)
+        src = reRemoveWhitespace.sub(replace_match, src)
+        src = reTrim.sub('', src)
+        src = reReplaceDoubleSpaces.sub(' ', src)
 
-        file_contents = reStripComments.sub('', file_contents)
-        file_contents = reRemoveWhitespace.sub(replace_match, file_contents)
-        file_contents = reTrim.sub('', file_contents)
-        file_contents = reReplaceDoubleSpaces.sub(' ', file_contents)
-
-        return file_contents
+        return src
 
     except (KeyboardInterrupt, EOFError):
         # Control-C or Control-D sent a SIGINT to the process, handle it.
