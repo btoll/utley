@@ -42,7 +42,6 @@ def main(argv):
     configFile = 'utley.json'
     dumpTarget = None
     task = None
-    targets = None
 
     # TODO: Can this be cleaned up?
     # \A = Matches only at the start of the string.
@@ -67,8 +66,6 @@ def main(argv):
             dumpTarget = arg
         elif opt == '-s':
             silent = True
-        elif opt == '-t':
-            targets = lib.base.make_list(arg)
         elif opt == '--task':
             task = arg
         elif opt == '-v':
@@ -76,8 +73,8 @@ def main(argv):
 
     json = lib.base.getJson(configFile)
     # Run all targets, `utley`
-#    if not len(targetOpts) and not len(taskOpts) and not targets:
-    if not len(allTargetAndTaskOpts) and not targets:
+#    if not len(targetOpts) and not len(taskOpts):
+    if not len(allTargetAndTaskOpts):
         # Assumes `utley.json` config file.
         for target in json:
             if target == 'tasks':

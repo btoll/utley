@@ -69,7 +69,7 @@ These can be called like:
     utley js
     utley css
     utley json
-    utley js,css,json
+    utley js css json
 
 Further, the targets can be nested objects:
 
@@ -136,28 +136,23 @@ The previous snippets were taken from the `utley.json` [build file] in my [Music
 
 Build only the CSS target.
 
-    utley -t css
-    utley css // Shortcut, same as above.
+    utley css
 
 Build only the JavaScript target.
 
-    utley -t js
     utley js
 
 Build multiple targets.
 
-    utley -t js,css,quizzes
-    utley js,css,quizzes
+    utley js css quizzes
 
 Build a nested subtarget.
 
-    utley -t foo.bar.quux
     utley foo.bar.quux
 
 Build whatever you want.
 
-    utley --target=clean,css,quizzes.chord_builder,my_custom_target
-    utley clean,css,quizzes.chord_builder,my_custom_target
+    utley clean css quizzes.chord_builder my_custom_target
 
 ### Tasks
 
@@ -165,17 +160,14 @@ Tasks must be pre-defined in the `tasks` block.
 
 Clean
 
-    utley --task=clean
-    utley --clean // Shortcut, same as above.
+    utley --clean
 
 Lint
 
-    utley --task=lint
     utley --lint
 
 Test
 
-    utley --task=test
     utley --test
 
 ### Mix Targets and Tasks
@@ -213,7 +205,6 @@ List the `build` target.
     -h | Help.
     -l | Dump a target to STDOUT.
     -s | Does not print log information to STDOUT (will print ERROR messages).
-    -t | Specify build targets (comma-separated).
     --{task} | Runs the shell command in the `tasks` block.
     -v | Print build information.
 

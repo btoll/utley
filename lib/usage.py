@@ -8,54 +8,39 @@ def usage():
         utley
 
         # Specify a different build file than the default `utley.json`.
-        utley --config=foo.json
+        utley -c foo.json
         # Build only the CSS target.
-        utley --target=css
         utley css
 
         # Build only the JavaScript target.
-        utley --target=js
         utley js
 
         # Build multiple targets.
-        utley --target=js,css,quizzes
-        utley js,css,quizzes
+        utley js css quizzes
 
         # Build a nested subtarget.
-        utley --target=foo.bar.quux
         utley foo.bar.quux
 
         # Build whatever you want.
-        utley --target=clean,css,quizzes.chord_builder,my_custom_target
-        utley clean,css,quizzes.chord_builder,my_custom_target
+        utley clean css quizzes.chord_builder my_custom_target
 
-        Note that any target(s) can use the shortcut:
-        utley [target(s)]
-
-        # Clean (assuming it's defined in the `tasks` block).
-        utley --task=clean
+        # Clean
         utley --clean
 
-        # Lint (assuming it's defined in the `tasks` block).
-        utley --task=lint
+        # Lint
         utley --lint
 
-        # Test (assuming it's defined in the `tasks` block).
-        utley --task=test
+        # Test
         utley --test
 
-        Note that any task defined in the `tasks` block can be aliased by:
-        utley --[task]
+        List the `js` target.
+        utley -l js
 
-        List the `build` target.
-        utley --list=build
-
-        --config, -c   The location of the build file. Defaults to `utley.json`.
-        --list, -l     Dump a target to STDOUT.
-        --silent       Does not print log information to STDOUT (will print ERROR messages).
-        --target       Specify build targets (comma-separated).
-        --task         Runs the shell command in the `tasks` block.
-        --verbose, -v  Print build information.
+        -c         The location of the build file. Defaults to `utley.json`.
+        -l         Dump a target to STDOUT.
+        -s         Does not print log information to STDOUT (will print ERROR messages).
+        --{task}   Runs the shell command in the `tasks` block.
+        -v         Print build information.
     '''
     print(textwrap.dedent(str))
 
