@@ -147,26 +147,26 @@ The previous snippets were taken from the `utley.json` [build file] in my [Music
 
 ## CLI Examples
 
-##### Targets
+### Targets
 
 Build only the CSS target.
 
-    utley --target=css
+    utley -t css
     utley css // Shortcut, same as above.
 
 Build only the JavaScript target.
 
-    utley --target=js
+    utley -t js
     utley js
 
 Build multiple targets.
 
-    utley --target=js,css,quizzes
+    utley -t js,css,quizzes
     utley js,css,quizzes
 
 Build a nested subtarget.
 
-    utley --target=foo.bar.quux
+    utley -t foo.bar.quux
     utley foo.bar.quux
 
 Build whatever you want.
@@ -174,24 +174,32 @@ Build whatever you want.
     utley --target=clean,css,quizzes.chord_builder,my_custom_target
     utley clean,css,quizzes.chord_builder,my_custom_target
 
-##### Tasks
+### Tasks
 
-Clean (assuming it's defined in the `tasks` block).
+Tasks must be pre-defined in the `tasks` block.
+
+Clean
 
     utley --task=clean
     utley --clean // Shortcut, same as above.
 
-Lint (assuming it's defined in the `tasks` block).
+Lint
 
     utley --task=lint
     utley --lint
 
-Test (assuming it's defined in the `tasks` block).
+Test
 
     utley --task=test
     utley --test
 
-##### Other
+### Mix Targets and Tasks
+
+Must be space-delimited.
+
+    utley --clean --lint js css
+
+### Other
 
 Build all targets (assumes an `utley.json` build file).
 
@@ -199,11 +207,11 @@ Build all targets (assumes an `utley.json` build file).
 
 Specify a different build file than the default `utley.json`.
 
-    utley --config=foo.json
+    utley -c foo.json
 
 List the `build` target.
 
-    utley --list=build
+    utley -l build
 
 ## Some `utley.json` Examples In The Wild
 
@@ -216,13 +224,13 @@ List the `build` target.
 
     Property | Description
     ------------ | -------------
-    --config, -c | The location of the build file. Defaults to `utley.json`.
-    --help, -h | Help.
-    --list, -l | Dump a target to STDOUT.
-    --silent | Does not print log information to STDOUT (will print ERROR messages).
-    --target | Specify build targets (comma-separated).
-    --task | Runs the shell command in the `tasks` block.
-    --verbose, -v | Print build information.
+    -c | The location of the build file. Defaults to `utley.json`.
+    -h | Help.
+    -l | Dump a target to STDOUT.
+    -s | Does not print log information to STDOUT (will print ERROR messages).
+    -t | Specify build targets (comma-separated).
+    --{task} | Runs the shell command in the `tasks` block.
+    -v | Print build information.
 
 ## License
 
