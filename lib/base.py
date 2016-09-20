@@ -34,7 +34,7 @@ def filter_exclusions(root, exclude=[], suffix='js'):
 def getJson(resource='utley.json'):
     try:
         # TODO: Is there a better way to get the values from the Json?
-        with open(resource, mode='r', encoding='utf-8') as f:
+        with open(resource, mode='r', encoding='utf8') as f:
             jsonData = json.loads(f.read())
 
         return jsonData
@@ -94,16 +94,4 @@ def sift_list(root, suffix, exclude=[], dependencies=[]):
             sys.exit(1)
 
     return target
-
-def write_buffer(buff, output):
-    if '/' in output:
-        dest, output = os.path.split(output)
-
-    # This will overwrite pre-existing.
-    if dest != '.':
-        os.makedirs(dest, exist_ok=True)
-
-    with open(dest + '/' + output, mode='w', encoding='utf-8') as fp:
-        # Flush the buffer (only perform I/O once).
-        fp.write(''.join(buff))
 

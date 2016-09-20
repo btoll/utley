@@ -8,32 +8,15 @@ from lib.usage import usage
 import lib.compressors.css
 import getopt
 import json
-import itertools
+import os
 import re
 import subprocess
 import sys
 
 builds = {}
 silent = False
-utleyCfg = None
 verbose = False
 reTaskRef = re.compile(r'utley -*(\w+)')
-
-def buildTargetOrTask(allTargetAndTaskOpts, json):
-    for arg in allTargetAndTaskOpts:
-        if '--' in arg:
-            # Chop off '--' prefix.
-            task = arg[2:]
-
-            if not silent:
-                spinner('Initiating ' + task + ' task... ')
-
-            doTask(task, json)
-
-            if not silent:
-                print('Completed\n')
-        else:
-            buildTarget(arg, json)
 
 def main(argv):
     global silent
@@ -47,7 +30,7 @@ def main(argv):
     # \A = Matches only at the start of the string.
     shortOpts = [arg for arg in argv if re.search('\A-{1}\w', arg)]
     # Match `--clean` or `js`
-    allTargetAndTaskOpts = [arg for arg in argv if re.search('\A[-{2}\w|\w+]', arg)]
+    allTargetAndTaskOpts = [arg for arg in argv if re.search('\A-{2}\w|\A\w+', arg)]
 
     try:
         opts, args = getopt.getopt(shortOpts, 'c:hl:st:v')
@@ -91,7 +74,7 @@ def main(argv):
 
 def buildTarget(target, json):
     if not silent:
-        print('Initiating ' + target + ' target...')
+        print('[TARGET] ' + target)
 
     # Allows for building a top-level target by name, i.e. `js@foo`.
     if '@' in target:
@@ -103,45 +86,30 @@ def buildTarget(target, json):
 
     doTarget(json, target, ls)
 
-def doCompress(cfg, target, buff):
-    global utleyCfg
+def buildTargetOrTask(allTargetAndTaskOpts, json):
+    for arg in allTargetAndTaskOpts:
+        if '--' in arg:
+            # Chop off '--' prefix.
+            task = arg[2:]
 
-    if not utleyCfg:
-        utleyCfg = lib.base.getJson(lib.base.getConfigFileLocation())
+            if not silent:
+                print('[TASK] ' + task)
 
-    lang = utleyCfg.get(target)
-    compressor = cfg.get('compress') if cfg.get('compress') != None else lang.get('compress')
-
-    if lang and compressor:
-        if not silent:
-            spinner('\t\t[INF] Compressing target ' + target + '... ')
-
-        if target == 'css' or target == 'json':
-            buff = lib.compressors.css.compress(buff)
-        elif target == 'js':
-            buff = subprocess.check_output(compressor + ' <(echo "' + buff + '")', shell=True, executable='/bin/bash', universal_newlines=True)
-
-        if not silent:
-            print('Completed')
-    elif not silent:
-        print('\t\t[INF] No compression operation')
-
-    return buff
+            doTask(task, json)
+        else:
+            buildTarget(arg, json)
 
 def doConcat(target, targetName):
     global builds
 
-    preprocessed = None
-
     for targetCfg in target:
         if not silent:
-            print('\n\t[TARGET] Building target ' + targetCfg.get('output'))
-            spinner('\t\t[INF] Concatenating target... ')
+            print('\t[ARTIFACT] Building ' + targetCfg.get('output'))
 
         buff = []
 
         src = targetCfg.get('src')
-        outputFile = targetCfg.get('output')
+        dest = targetCfg.get('output')
         dependencies = targetCfg.get('dependencies', [])
         exclude = targetCfg.get('exclude', [])
         name = targetCfg.get('name', '')
@@ -153,30 +121,30 @@ def doConcat(target, targetName):
             lib.base.make_list(dependencies)
         )
 
-        for script in ls:
-            # If script is a named target then retrieve it from the global `builds` dict.
-            # Note that it assumes the named target was already built!
-            if script[0] == '@':
-                buff.append(''.join(builds.get(script[1:])))
-            else:
-                script = open(script, 'r')
+        buff = preprocess(targetCfg, targetName, ls, dest)
 
-                for line in script:
-                    buff.append(line)
+        if not buff:
+            buff = []
 
-                script.close()
+            for script in ls:
+                # If script is a named target then retrieve it from the global `builds` dict.
+                # Note that it assumes the named target was already built!
+                # TODO
+                if script[0] == '@':
+                    buff.append(''.join(builds.get(script[1:])))
+                else:
+                    script = open(script, 'r')
 
-        lib.base.write_buffer(buff, outputFile)
+                    for line in script:
+                        buff.append(line)
+
+                    script.close()
+
+            with open(dest, mode='w', encoding='utf8') as fp:
+                fp.write(''.join(buff))
 
         if not silent:
-            print('Completed')
-
-        # If a named target then skip here, it probably was preprocessed the first time when it was built.
-        buff = doTranspile(targetCfg, targetName, outputFile)
-        buff = doCompress(targetCfg, targetName, buff)
-
-        if buff:
-            lib.base.write_buffer(buff, outputFile)
+            print('\t\t[INF] Concatenated\n')
 
         if name:
             builds.update({
@@ -214,33 +182,6 @@ def doTask(key, json):
         print('[ERROR] Unrecognized task `' + key + '`')
         sys.exit(1)
 
-def doTranspile(cfg, target, outputFile):
-    global utleyCfg
-    buff = ''
-
-    if not utleyCfg:
-        utleyCfg = lib.base.getJson(lib.base.getConfigFileLocation())
-
-    lang = utleyCfg.get(target)
-    transpiler = cfg.get('transpile') if cfg.get('transpile') != None else lang.get('transpile')
-
-    if lang and transpiler:
-        if not silent:
-            spinner('\t\t[INF] Transpiling target ' + target + ' using ' +  transpiler + '... ')
-
-        buff = subprocess.getoutput(transpiler + ' ' + outputFile)
-
-        if not silent:
-            print('Completed')
-    elif not silent:
-        with open(outputFile) as f:
-            buff = f.read()
-
-        print('\t\t[INF] No transpilation operation')
-
-    # Return the filepath if no transpilation has occurred.
-    return buff
-
 def getNestedTarget(keys, ls):
     for key in keys:
         ls = ls.get(key)
@@ -252,13 +193,68 @@ def getTarget(target, json):
     # It will only be dot-separated if explicitly passed as a build target.
     return getNestedTarget(target.split('.'), json) if '.' in target else json.get(target)
 
-def spinner(msg):
-    spinner = itertools.cycle(['-', '\\', '|', '/'])
+def preprocess(cfg, target, ls, dest):
+    buff = None
 
-    sys.stdout.write(msg + next(spinner))
-    sys.stdout.write('\b')
-    sys.stdout.flush()
-    sys.stdout.write('\b')
+    utleyCfg = lib.base.getJson(lib.base.getConfigFileLocation())
+    lang = utleyCfg.get(target)
+
+    if lang:
+        # TODO: Cleanup?
+        # TODO: DRY
+        transpiler = cfg.get('transpile') if cfg.get('transpile') != None else lang.get('transpile')
+        compressor = cfg.get('compress') if cfg.get('compress') != None else lang.get('compress')
+
+        if transpiler and compressor:
+            ls.insert(0, transpiler)
+
+            p1 = subprocess.Popen(ls, stdout=subprocess.PIPE)
+            p2 = subprocess.Popen([compressor], stdin=p1.stdout, stdout=subprocess.PIPE)
+            p1.stdout.close()
+            buff = p2.communicate()[0]
+            p2.stdout.close()
+
+            with open(dest, mode='w', encoding='utf8') as fp:
+                fp.write(''.join(buff.decode('utf8')))
+
+        elif transpiler:
+            ls.insert(0, transpiler)
+
+            p = subprocess.Popen(ls, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            buff = p.communicate()[0]
+            p.stdout.close()
+
+            with open(dest, mode='w', encoding='utf8') as fp:
+                fp.write(''.join(buff.decode('utf8')))
+
+        elif compressor:
+            if target == 'css' or target == 'json':
+                buff = lib.compressors.css.compress(ls)
+            elif target == 'js':
+                ls.insert(0, 'cat')
+
+                p1 = subprocess.Popen(ls, stdout=subprocess.PIPE)
+                p2 = subprocess.Popen([compressor], stdin=p1.stdout, stdout=subprocess.PIPE)
+                p1.stdout.close()
+                buff = p2.communicate()[0]
+                p2.stdout.close()
+
+            with open(dest, mode='w', encoding='utf8') as fp:
+                fp.write(''.join(buff.decode('utf8')))
+
+        else:
+            print('\t\t[INF] No transpilation or compression')
+
+        if not silent:
+            if transpiler:
+                print('\t\t[INF] Transpiled')
+
+            if compressor:
+                print('\t\t[INF] Compressed')
+    elif not silent:
+        print('\t\t[INF] Nothing configured for ' + target)
+
+    return buff
 
 if __name__ == '__main__':
     main(sys.argv[1:])
