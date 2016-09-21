@@ -95,3 +95,17 @@ def sift_list(root, suffix, exclude=[], dependencies=[]):
 
     return target
 
+def write_buffer(buff, basename):
+    dirname = '.'
+
+    if '/' in basename:
+        dirname, basename = os.path.split(basename)
+
+    # This will overwrite pre-existing.
+    if dirname != '.':
+        os.makedirs(dirname, exist_ok=True)
+
+    with open(dirname + '/' + basename, mode='w', encoding='utf8') as fp:
+        # Flush the buffer (only perform I/O once).
+        fp.write(''.join(buff))
+

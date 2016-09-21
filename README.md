@@ -74,7 +74,7 @@ These can be called like:
 Further, the targets can be nested objects:
 
     "quizzes": {
-        "chord_puzzle": [{
+        "chord_puzzle": {
             "css": [{
                 "src": "app/quizzes/chord_puzzle/",
                 "output": "build/quizzes/chord_puzzle/quiz.css"
@@ -92,9 +92,9 @@ Further, the targets can be nested objects:
                 "src": "app/chords/sevenths/advanced.json",
                 "output": "build/chords/sevenths/advanced.json"
             }]
-        }],
+        },
 
-        "chord_builder": [{
+        "chord_builder": {
             "css": [{
                 "src": "app/quizzes/chord_builder/",
                 "output": "build/quizzes/chord_builder/quiz.css"
@@ -104,7 +104,7 @@ Further, the targets can be nested objects:
                 "src": "app/quizzes/chord_builder/",
                 "output": "build/quizzes/chord_builder/quiz.js"
             }]
-        }],
+        },
 
         ...
 

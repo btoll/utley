@@ -14,6 +14,7 @@ import subprocess
 import sys
 
 builds = {}
+isNestedTarget = False
 silent = False
 verbose = False
 reTaskRef = re.compile(r'utley -*(\w+)')
@@ -73,6 +74,7 @@ def main(argv):
         sys.exit(1)
 
 def buildTarget(target, json):
+    global isNestedTarget
     if not silent:
         print('[TARGET] ' + target)
 
@@ -84,7 +86,14 @@ def buildTarget(target, json):
     else:
         ls = getTarget(target, json)
 
-    doTarget(json, target, ls)
+        if isNestedTarget:
+            # Turn off immediately.
+            isNestedTarget = False
+
+            for targ in ls:
+                doTarget(targ, ls[targ])
+
+    doTarget(target, ls)
 
 def buildTargetOrTask(allTargetAndTaskOpts, json):
     for arg in allTargetAndTaskOpts:
@@ -140,8 +149,7 @@ def doConcat(target, targetName):
 
                     script.close()
 
-            with open(dest, mode='w', encoding='utf8') as fp:
-                fp.write(''.join(buff))
+            lib.base.write_buffer(buff, dest)
 
         if not silent:
             print('\t\t[INF] Concatenated\n')
@@ -151,7 +159,7 @@ def doConcat(target, targetName):
                 name: buff
             })
 
-def doTarget(json, target, ls):
+def doTarget(target, ls):
     # If operating on one of the known extensions then pass it directly on.
     if target in lib.base.compressors.keys():
         doConcat(ls, target)
@@ -160,6 +168,7 @@ def doTarget(json, target, ls):
             print('[ERROR] Unrecognized target `' + target + '`')
             sys.exit(1)
         else:
+            # Custom target, i.e. `quizzes`.
             for subtarget in ls:
                 buildTarget(subtarget, ls)
 
@@ -183,6 +192,9 @@ def doTask(key, json):
         sys.exit(1)
 
 def getNestedTarget(keys, ls):
+    global isNestedTarget
+    isNestedTarget = True
+
     for key in keys:
         ls = ls.get(key)
 
@@ -201,7 +213,7 @@ def preprocess(cfg, target, ls, dest):
 
     if lang:
         # TODO: Cleanup?
-        # TODO: DRY
+        # TODO: DRY!
         transpiler = cfg.get('transpile') if cfg.get('transpile') != None else lang.get('transpile')
         compressor = cfg.get('compress') if cfg.get('compress') != None else lang.get('compress')
 
@@ -214,9 +226,7 @@ def preprocess(cfg, target, ls, dest):
             buff = p2.communicate()[0]
             p2.stdout.close()
 
-            with open(dest, mode='w', encoding='utf8') as fp:
-                fp.write(''.join(buff.decode('utf8')))
-
+            lib.base.write_buffer(buff.decode('utf8'), dest)
         elif transpiler:
             ls.insert(0, transpiler)
 
@@ -224,9 +234,7 @@ def preprocess(cfg, target, ls, dest):
             buff = p.communicate()[0]
             p.stdout.close()
 
-            with open(dest, mode='w', encoding='utf8') as fp:
-                fp.write(''.join(buff.decode('utf8')))
-
+            lib.base.write_buffer(buff.decode('utf8'), dest)
         elif compressor:
             if target == 'css' or target == 'json':
                 buff = lib.compressors.css.compress(ls)
@@ -239,9 +247,7 @@ def preprocess(cfg, target, ls, dest):
                 buff = p2.communicate()[0]
                 p2.stdout.close()
 
-            with open(dest, mode='w', encoding='utf8') as fp:
-                fp.write(''.join(buff.decode('utf8')))
-
+            lib.base.write_buffer(buff.decode('utf8'), dest)
         else:
             print('\t\t[INF] No transpilation or compression')
 
