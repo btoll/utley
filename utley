@@ -115,7 +115,8 @@ def doConcat(target, targetName):
         if not silent:
             print('\t[ARTIFACT] Building ' + targetCfg.get('output'))
 
-        buff = []
+        buff = None
+        prevBuff = []
 
         src = targetCfg.get('src')
         dest = targetCfg.get('output')
@@ -130,26 +131,20 @@ def doConcat(target, targetName):
             lib.base.make_list(dependencies)
         )
 
-        buff = preprocess(targetCfg, targetName, ls, dest)
+        if len([item for item in ls if item[0] == '@']):
+            # TODO: Clean this up!
+            for item in lib.base.make_sub_lists(ls):
+                if type(item) == str:
+                    prevBuff.append(builds.get(item[1:]))
 
-        if not buff:
-            buff = []
+            if len(ls) > 1:
+                buff = preprocess(targetCfg, targetName, item, dest, prevBuff)
+            else:
+                # The src is only a named target (@pete) and NOT any filenames.
+                buff = prevBuff[0]
 
-            for script in ls:
-                # If script is a named target then retrieve it from the global `builds` dict.
-                # Note that it assumes the named target was already built!
-                # TODO
-                if script[0] == '@':
-                    buff.append(''.join(builds.get(script[1:])))
-                else:
-                    script = open(script, 'r')
-
-                    for line in script:
-                        buff.append(line)
-
-                    script.close()
-
-            lib.base.write_buffer(buff, dest)
+        else:
+            buff = preprocess(targetCfg, targetName, ls, dest)
 
         if not silent:
             print('\t\t[INF] Concatenated\n')
@@ -205,7 +200,7 @@ def getTarget(target, json):
     # It will only be dot-separated if explicitly passed as a build target.
     return getNestedTarget(target.split('.'), json) if '.' in target else json.get(target)
 
-def preprocess(cfg, target, ls, dest):
+def preprocess(cfg, target, ls, dest, prevBuff = None):
     buff = None
 
     utleyCfg = lib.base.getJson(lib.base.getConfigFileLocation())
@@ -226,6 +221,9 @@ def preprocess(cfg, target, ls, dest):
             buff = p2.communicate()[0]
             p2.stdout.close()
 
+            if prevBuff:
+                buff = prevBuff[0] + buff
+
             lib.base.write_buffer(buff.decode('utf8'), dest)
         elif transpiler:
             ls.insert(0, transpiler)
@@ -233,6 +231,9 @@ def preprocess(cfg, target, ls, dest):
             p = subprocess.Popen(ls, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             buff = p.communicate()[0]
             p.stdout.close()
+
+            if prevBuff:
+                buff = prevBuff[0] + buff
 
             lib.base.write_buffer(buff.decode('utf8'), dest)
         elif compressor:
@@ -246,6 +247,9 @@ def preprocess(cfg, target, ls, dest):
                 p1.stdout.close()
                 buff = p2.communicate()[0]
                 p2.stdout.close()
+
+            if prevBuff:
+                buff = prevBuff[0] + buff
 
             lib.base.write_buffer(buff.decode('utf8'), dest)
         else:

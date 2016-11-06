@@ -60,10 +60,41 @@ def make_abspath(root, ls):
 
 def make_list(ls):
     # Split string by comma and strip leading and trailing whitepace from each list element.
-    return ls if type(ls) is list else [f.strip() for f in ls.split(',')]
+    return ls if type(ls) is list else [item.strip() for item in ls.split(',')]
+
+def make_sub_lists(arr, acc = []):
+    # The idea is that a list like:
+    #
+    #   [‘@pete’, ‘/foo’, ‘/bar’, ‘@utley’, ‘/zap’]
+    #
+    # will become:
+    #
+    #   [‘@pete’, [‘/foo’, ‘/bar’], ‘@utley’, [‘/zap’]]
+    #
+    if not len(arr):
+        return acc
+
+    item = arr[0]
+
+    # If the item begins with the appropriate symbol, then create a new subarray.
+    if item[0] == '@':
+        sub = []
+
+        # If there are items in the accumulator, they must be BEFORE the special symbol
+        # item and any remaining items.
+        if len(acc):
+            sub.append(acc)
+
+#        return sub.concat(item, make_sub_lists(arr[1:], []))
+        return sub + [item, make_sub_lists(arr[1:], [])]
+    else:
+        # Else keep appending to the same array.
+        acc.append(item)
+
+        return make_sub_lists(arr[1:], acc)
 
 def process_files(src, files):
-    return [f for f in make_abspath(src, files) if os.path.isfile(f)]
+    return [item for item in make_abspath(src, files) if os.path.isfile(item)]
 
 def sift_list(root, suffix, exclude=[], dependencies=[]):
     # TODO: add more line comments!
