@@ -101,9 +101,6 @@ def buildTargetOrTask(allTargetAndTaskOpts, json):
             # Chop off '--' prefix.
             task = arg[2:]
 
-            if not silent:
-                print('[TASK] ' + task)
-
             doTask(task, json)
         else:
             buildTarget(arg, json)
@@ -168,8 +165,7 @@ def doTarget(target, ls):
                 buildTarget(subtarget, ls)
 
 def doTask(key, json):
-    tasks = json.get('tasks')
-    task = tasks.get(key)
+    task = json.get('tasks').get(key)
 
     if task:
         if verbose:
@@ -181,6 +177,9 @@ def doTask(key, json):
         else:
             # Instead of handling a non-zero exit code here and throwing, each shell command will have
             # to clean up after itself.
+            if not silent:
+                print('[TASK] ' + key + ' -> `' + task + '`')
+
             subprocess.call(task, shell=True)
     elif not task and not silent:
         print('[ERROR] Unrecognized task `' + key + '`')
