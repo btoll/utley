@@ -27,11 +27,8 @@ def main(argv):
     dumpTarget = None
     task = None
 
-    # TODO: Can this be cleaned up?
     # \A = Matches only at the start of the string.
     shortOpts = [arg for arg in argv if re.search('\A-{1}\w', arg)]
-    # Match `--clean` or `js`
-    allTargetAndTaskOpts = [arg for arg in argv if re.search('\A-{2}\w|\A\w+', arg)]
 
     try:
         opts, args = getopt.getopt(shortOpts, 'c:hl:st:v')
@@ -55,23 +52,21 @@ def main(argv):
         elif opt == '-v':
             verbose = True
 
-    json = lib.base.getJson(configFile)
+
     # Run all targets, `utley`
-#    if not len(targetOpts) and not len(taskOpts):
-    if not len(allTargetAndTaskOpts):
+    if not len(argv):
+        json = lib.base.getJson(configFile)
+
         # Assumes `utley.json` config file.
         for target in json:
             if target == 'tasks':
                 continue
 
             buildTarget(target, json)
-    elif len(allTargetAndTaskOpts):
+    elif len(argv):
         # This provides a shortcut for calling top-level targets (js, css, etc.) or shell commands
         # defined in the `tasks` block.
-        buildTargetOrTask(allTargetAndTaskOpts, json)
-    else:
-        print('[ERROR] No ' + target + ' target found, aborting.')
-        sys.exit(1)
+        buildTargetOrTask(argv, lib.base.getJson(configFile))
 
 def buildTarget(target, json):
     global isNestedTarget
@@ -99,9 +94,7 @@ def buildTargetOrTask(allTargetAndTaskOpts, json):
     for arg in allTargetAndTaskOpts:
         if '--' in arg:
             # Chop off '--' prefix.
-            task = arg[2:]
-
-            doTask(task, json)
+            doTask(arg[2:], json)
         else:
             buildTarget(arg, json)
 
@@ -171,16 +164,12 @@ def doTask(key, json):
         if verbose:
             print('[DEBUG] Processing -> ' + task)
 
-        # If the task references another task, don't create a subprocess.
-        if 'utley' in task:
-            buildTargetOrTask([arg for arg in task.split(' ')[1:] if re.search('\A[-{2}\w|\w+]', arg)], json)
-        else:
-            # Instead of handling a non-zero exit code here and throwing, each shell command will have
-            # to clean up after itself.
-            if not silent:
-                print('[TASK] ' + key + ' -> `' + task + '`')
+        # Instead of handling a non-zero exit code here and throwing, each shell command will have
+        # to clean up after itself.
+        if not silent:
+            print('[TASK] ' + key + ' -> `' + task + '`')
 
-            subprocess.call(task, shell=True)
+        subprocess.call(task, shell=True)
     elif not task and not silent:
         print('[ERROR] Unrecognized task `' + key + '`')
         sys.exit(1)
