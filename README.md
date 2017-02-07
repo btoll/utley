@@ -210,7 +210,7 @@ List the `build` target.
 
 ## License
 
-[MIT](LICENSE)
+[GPLv3](COPYING)
 
 [build file]: https://github.com/btoll/music_theory/blob/master/utley.json
 [repo]: https://github.com/btoll/music_theory
