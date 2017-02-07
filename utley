@@ -190,16 +190,26 @@ def getTarget(target, json):
 
 def preprocess(cfg, target, ls, dest, prevBuff = None):
     buff = None
+    sourceFiles = ''
+    writeToBuffer = True
 
     utleyCfg = lib.base.getJson(lib.base.getConfigFileLocation())
     lang = utleyCfg.get(target)
 
     if lang:
+        # Add source file locations for each script.
+        # https://www.gnu.org/philosophy/javascript-trap.html
+        if target == 'js':
+            for f in ls:
+                sourceFiles += '// @source ./' + f + '\n'
+
         # TODO: Cleanup?
         # TODO: DRY!
         transpiler = cfg.get('transpile') if cfg.get('transpile') != None else lang.get('transpile')
         compressor = cfg.get('compress') if cfg.get('compress') != None else lang.get('compress')
 
+        # If possible, prepend the build tool name to the list of one or more scripts/files and run
+        # the tooling on everything in the list.
         if transpiler and compressor:
             ls.insert(0, transpiler)
 
@@ -212,7 +222,6 @@ def preprocess(cfg, target, ls, dest, prevBuff = None):
             if prevBuff:
                 buff = prevBuff[0] + buff
 
-            lib.base.write_buffer(buff.decode('utf8'), dest)
         elif transpiler:
             ls.insert(0, transpiler)
 
@@ -223,7 +232,6 @@ def preprocess(cfg, target, ls, dest, prevBuff = None):
             if prevBuff:
                 buff = prevBuff[0] + buff
 
-            lib.base.write_buffer(buff.decode('utf8'), dest)
         elif compressor:
             if target == 'css' or target == 'json':
                 buff = lib.compressors.css.compress(ls)
@@ -239,9 +247,12 @@ def preprocess(cfg, target, ls, dest, prevBuff = None):
             if prevBuff:
                 buff = prevBuff[0] + buff
 
-            lib.base.write_buffer(buff.decode('utf8'), dest)
         else:
             print('\t\t[INF] No transpilation or compression')
+            writeToBuffer = False
+
+        if writeToBuffer:
+            lib.base.write_buffer(sourceFiles + buff.decode('utf8'), dest)
 
         if not silent:
             if transpiler:
