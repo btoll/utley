@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=1090
 
 echo "$(tput setaf 2)[INF]$(tput sgr0) Installing Python build tools..."
 
@@ -10,7 +11,7 @@ ln -s "$PWD"/utley.py /usr/local/bin/utley.py
 if [ -f ~/.bashrc ]; then
     echo "export PYTHONPATH=\$PYTHONPATH:/usr/local/bin/" >> ~/.bashrc
     . ~/.bashrc
-else if [ -f ~/.bash_profile ]; then
+elif [ -f ~/.bash_profile ]; then
     echo "export PYTHONPATH=\$PYTHONPATH:/usr/local/bin/" >> ~/.bash_profile
     . ~/.bash_profile
 else
