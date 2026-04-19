@@ -190,6 +190,27 @@ List the `build` target.
 
     utley -l build
 
+## Example Of Run Command File
+
+This is a minimal example:
+
+`$HOME/.utleyrc`
+
+```json
+{
+    "css": {
+        "compress": true
+    },
+    "js": {
+        "compress": "uglifyjs",
+        "transpile": "babel"
+    },
+    "json": {
+        "compress": true
+    }
+}
+```
+
 ## Some `utley.json` Examples In The Wild
 
 + [build file][build file0] in [benjamintoll.com][repo0] repo.
